@@ -31,3 +31,4 @@ urllib3==2.7.0
 userpath==1.9.2
 uvicorn==0.49.0
 gunicorn
+whitenoise
