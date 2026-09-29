@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-const BASE_URL =
+// Obtém a URL e remove aspas, espaços ou parênteses/colchetes acidentais
+const rawUrl =
   import.meta.env.VITE_API_URL ||
   'https://twitter-backend-g21b.onrender.com/api/';
+const cleanUrl = rawUrl.replace(/["'\][)]/g, '').trim();
+const BASE_URL = cleanUrl.endsWith('/') ? cleanUrl : `${cleanUrl}/`;
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -27,7 +30,7 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes('/token/refresh/')
+      !originalRequest.url?.includes('token/refresh')
     ) {
       originalRequest._retry = true;
 
