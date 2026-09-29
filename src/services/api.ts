@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://twitter-backend-g21b.onrender.com/api/';
+
 export const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/',
+  baseURL: BASE_URL,
 });
 
 api.interceptors.request.use(
@@ -31,10 +35,9 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('@Twitter:refresh_token');
 
         if (refreshToken) {
-          const response = await axios.post(
-            'http://127.0.0.1:8000/api/token/refresh/',
-            { refresh: refreshToken }
-          );
+          const response = await axios.post(`${BASE_URL}token/refresh/`, {
+            refresh: refreshToken,
+          });
 
           const newAccessToken = response.data.access;
 
