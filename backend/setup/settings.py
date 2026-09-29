@@ -4,7 +4,9 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-71=my$@!b_foq0up1in1egwd%dp+)jf1118w64q*@%0*^75rd3"
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-71=my$@!b_foq0up1in1egwd%dp+)jf1118w64q*@%0*^75rd3"
+)
 
 DEBUG = True
 
@@ -24,7 +26,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -61,7 +63,6 @@ DATABASES = {
     }
 }
 
-# Validação de Senhas
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
@@ -71,7 +72,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Autenticação Customizada (Login por E-mail ou Username)
 AUTHENTICATION_BACKENDS = [
     "api.backends.EmailOrUsernameModelBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -83,15 +83,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_HEADERS = [
     "accept",
