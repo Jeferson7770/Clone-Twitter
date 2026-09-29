@@ -6,6 +6,7 @@ import {
   useEffect,
   type ReactNode,
 } from 'react';
+import axios from 'axios';
 import { api } from '../services/api';
 
 export interface Profile {
@@ -23,6 +24,7 @@ export interface User {
   profile: Profile;
   followers_count: number;
   following_count: number;
+  tweets_count?: number;
 }
 
 interface LoginCredentials {
@@ -39,7 +41,7 @@ export interface RegisterCredentials {
   avatar?: File | null;
 }
 
-interface AuthContextData {
+export interface AuthContextData {
   user: User | null;
   loading: boolean;
   signIn: (credentials: LoginCredentials) => Promise<void>;
@@ -62,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = () => {
     localStorage.removeItem('@Twitter:token');
-    localStorage.removeItem('@Twitter:refreshToken');
+    localStorage.removeItem('@Twitter:refresh_token');
     setUser(null);
   };
 
@@ -90,7 +92,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { access, refresh } = response.data;
 
     localStorage.setItem('@Twitter:token', access);
-    localStorage.setItem('@Twitter:refreshToken', refresh);
+    localStorage.setItem('@Twitter:refresh_token', refresh);
 
     const userResponse = await api.get<User>('/me/');
     setUser(userResponse.data);
@@ -98,24 +100,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signUp = async (credentials: RegisterCredentials) => {
     const formData = new FormData();
-    formData.append('username', credentials.username);
+    formData.append('username', credentials.username.trim());
     formData.append('password', credentials.password);
 
-    if (credentials.email) formData.append('email', credentials.email);
-    if (credentials.first_name)
-      formData.append('first_name', credentials.first_name);
-    if (credentials.birth_date)
-      formData.append('birth_date', credentials.birth_date);
-    if (credentials.avatar) formData.append('avatar', credentials.avatar);
+    if (credentials.email?.trim()) {
+      formData.append('email', credentials.email.trim());
+    }
+    if (credentials.first_name?.trim()) {
+      formData.append('first_name', credentials.first_name.trim());
+    }
+    if (credentials.birth_date?.trim()) {
+      formData.append('birth_date', credentials.birth_date.trim());
+    }
+    if (credentials.avatar instanceof File) {
+      formData.append('avatar', credentials.avatar);
+    }
 
-    await api.post('/register/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    try {
+      await api.post('/register/', formData);
 
-    await signIn({
-      username: credentials.username,
-      password: credentials.password,
-    });
+      await signIn({
+        username: credentials.username,
+        password: credentials.password,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data) {
+        console.error('Validação DRF:', error.response.data);
+      }
+      throw error;
+    }
   };
 
   const updateUser = (updatedUser: User) => {

@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState, type ChangeEvent } from 'react';
 import axios from 'axios';
+import { api } from '../../services/api'; // <-- Importação adicionada
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Container,
@@ -26,7 +28,10 @@ import {
 
 export const AuthPage: React.FC = () => {
   const { signIn, signUp } = useAuth();
+
   const [isRegister, setIsRegister] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
 
   const [username, setUsername] = useState('');
@@ -50,12 +55,65 @@ export const AuthPage: React.FC = () => {
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (!firstName || !username || !password) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
-    setError(null);
+
+    if (firstName.length > 50) {
+      setError('O nome não pode ter mais de 50 caracteres.');
+      return;
+    }
+
+    if (
+      password.length < 8 ||
+      !/[a-zA-Z]/.test(password) ||
+      !/\d/.test(password)
+    ) {
+      setError(
+        'A senha deve ter pelo menos 8 caracteres, incluindo pelo menos uma letra e um número.'
+      );
+      return;
+    }
+
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError(
+          'Por favor, insira um e-mail válido (ex: usuario@dominio.com).'
+        );
+        return;
+      }
+    }
+
     setStep(2);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!email.trim()) {
+      setError('Por favor, insira o e-mail cadastrado na conta.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('password-reset/', {
+        email: email.trim(),
+      });
+      setForgotPasswordSuccess(true);
+    } catch (err) {
+      console.error(err);
+      setError(
+        'Ocorreu um erro ao tentar processar a solicitação. Verifique sua conexão e tente novamente.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFinalSubmit = async (selectedAvatar: File | null = avatar) => {
@@ -67,7 +125,7 @@ export const AuthPage: React.FC = () => {
         await signUp({
           username,
           password,
-          email,
+          email: email.trim() ? email.trim() : undefined,
           first_name: firstName,
           birth_date: birthDate,
           avatar: selectedAvatar,
@@ -79,10 +137,17 @@ export const AuthPage: React.FC = () => {
       console.error(err);
       if (axios.isAxiosError(err) && err.response?.data) {
         const data = err.response.data;
-        if (data.detail) {
+
+        if (err.response.status === 401) {
+          setError(
+            'Sua sessão expirou ou as credenciais são inválidas. Por favor, faça login novamente.'
+          );
+        } else if (data.detail) {
           setError(data.detail);
         } else if (data.username) {
           setError(`Usuário: ${data.username[0]}`);
+        } else if (data.email) {
+          setError(`E-mail: ${data.email[0]}`);
         } else {
           setError('Ocorreu um erro ao processar sua solicitação.');
         }
@@ -97,8 +162,18 @@ export const AuthPage: React.FC = () => {
   return (
     <Container>
       <Header>
-        {isRegister && step === 2 ? (
-          <BackButton onClick={() => setStep(1)}>
+        {(isRegister && step === 2) || isForgotPassword ? (
+          <BackButton
+            onClick={() => {
+              if (isForgotPassword) {
+                setIsForgotPassword(false);
+                setForgotPasswordSuccess(false);
+                setError(null);
+              } else {
+                setStep(1);
+              }
+            }}
+          >
             <BackIcon />
           </BackButton>
         ) : (
@@ -111,8 +186,65 @@ export const AuthPage: React.FC = () => {
       <Content>
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        {!isRegister ? (
-          /* LOGIN DIRETO */
+        {isForgotPassword ? (
+          <>
+            <Title>Encontre sua conta do Twitter</Title>
+            {forgotPasswordSuccess ? (
+              <>
+                <SubTitle style={{ marginTop: '10px', marginBottom: '20px' }}>
+                  Se o e-mail existir em nossa base, você receberá um link com
+                  as instruções para redefinir sua senha.
+                </SubTitle>
+                <FooterActions>
+                  <NextButton
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setForgotPasswordSuccess(false);
+                      setEmail('');
+                    }}
+                  >
+                    Voltar ao Login
+                  </NextButton>
+                </FooterActions>
+              </>
+            ) : (
+              <>
+                <SubTitle style={{ marginTop: '10px', marginBottom: '20px' }}>
+                  Insira o e-mail associado à sua conta para alterar sua senha.
+                </SubTitle>
+                <Form onSubmit={handleForgotPassword}>
+                  <InputWrapper>
+                    <FloatingInputBox>
+                      <label htmlFor="reset-email">E-mail cadastrado</label>
+                      <input
+                        id="reset-email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="ex: joao@email.com"
+                      />
+                    </FloatingInputBox>
+                  </InputWrapper>
+
+                  <NextButton type="submit" disabled={loading}>
+                    {loading ? 'Buscando...' : 'Avançar'}
+                  </NextButton>
+                </Form>
+                <FooterLinks>
+                  <span
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setError(null);
+                    }}
+                  >
+                    Voltar ao Login
+                  </span>
+                </FooterLinks>
+              </>
+            )}
+          </>
+        ) : !isRegister ? (
           <>
             <Title>Entrar no Twitter</Title>
             <Form
@@ -155,7 +287,15 @@ export const AuthPage: React.FC = () => {
             </Form>
 
             <FooterLinks>
-              <span>Esqueceu sua senha?</span>
+              <span
+                onClick={() => {
+                  setIsForgotPassword(true);
+                  setError(null);
+                  setForgotPasswordSuccess(false);
+                }}
+              >
+                Esqueceu sua senha?
+              </span>
               <span className="dot">•</span>
               <span
                 onClick={() => {
@@ -169,7 +309,6 @@ export const AuthPage: React.FC = () => {
             </FooterLinks>
           </>
         ) : step === 1 ? (
-          /* REGISTRO - ETAPA 1: DADOS */
           <>
             <Title>Criar sua conta</Title>
             <Form onSubmit={handleNextStep}>
@@ -203,7 +342,7 @@ export const AuthPage: React.FC = () => {
 
               <InputWrapper>
                 <FloatingInputBox>
-                  <label htmlFor="email">Celular ou e-mail</label>
+                  <label htmlFor="email">E-mail</label>
                   <input
                     id="email"
                     type="email"
@@ -255,10 +394,11 @@ export const AuthPage: React.FC = () => {
             </FooterLinks>
           </>
         ) : (
-          /* REGISTRO - ETAPA 2: FOTO DE PERFIL */
           <>
             <Title>Escolher uma foto de perfil</Title>
-            <SubTitle>Tem uma selfie favorita? Carregue agora.</SubTitle>
+            <SubTitle>
+              Tem uma selfie favorita? Carregue agora para o seu perfil.
+            </SubTitle>
 
             <UploadBox>
               <input
@@ -267,7 +407,19 @@ export const AuthPage: React.FC = () => {
                 onChange={handleAvatarChange}
               />
               {avatarPreview ? (
-                <AvatarPreview src={avatarPreview} alt="Preview do avatar" />
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                  }}
+                >
+                  <AvatarPreview src={avatarPreview} alt="Preview do avatar" />
+                </div>
               ) : (
                 <>
                   <UploadIcon />

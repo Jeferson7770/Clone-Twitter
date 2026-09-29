@@ -37,6 +37,8 @@ export default createGlobalStyle`
     --twitter: #33A1F2;
     --twitter-dark-hover: #011017;
     --twitter-light-hover: #2c8ed6;
+    --danger: #f4212e;
+    --danger-hover: #dc1e29;
   }
 `;
 

@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-
 import Button from '../Button';
 
 export const Container = styled.div`
@@ -20,6 +19,7 @@ export const Avatar = styled.div`
   border-radius: 50%;
   margin-right: 10px;
 `;
+
 export const Info = styled.div`
   display: flex;
   flex-direction: column;
@@ -33,6 +33,16 @@ export const Info = styled.div`
     color: var(--gray);
   }
 `;
-export const FollowButton = styled(Button)`
+
+interface FollowButtonProps {
+  $outlined?: boolean;
+}
+
+export const FollowButton = styled(Button)<FollowButtonProps>`
   padding: 6px 17px;
+
+  background: ${(props) =>
+    props.$outlined ? 'transparent' : 'var(--twitter)'};
+  color: ${(props) => (props.$outlined ? 'var(--white)' : 'var(--white)')};
+  border: ${(props) => (props.$outlined ? '1px solid var(--twitter)' : 'none')};
 `;

@@ -8,6 +8,7 @@ import {
   Person,
   ExitToApp,
   Twitter,
+  Settings,
 } from '../../styles/Icons';
 
 export const Container = styled.div`
@@ -38,6 +39,7 @@ export const Topside = styled.div`
     align-items: flex-start;
   }
 `;
+
 export const Logo = styled(Twitter)`
   width: 41px;
   height: 41px;
@@ -48,10 +50,14 @@ export const Logo = styled(Twitter)`
 
   margin-bottom: 20px;
 `;
+
 export const MenuButton = styled.button`
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--white);
 
   > span {
     display: none;
@@ -61,8 +67,6 @@ export const MenuButton = styled.button`
     > span {
       display: inline;
       margin-left: 19px;
-
-      font-weight: bold;
       font-size: 19px;
     }
 
@@ -98,6 +102,7 @@ export const MenuButton = styled.button`
 
   cursor: pointer;
   border-radius: 25px;
+  transition: background 0.2s;
 
   &:hover {
     background: var(--twitter-dark-hover);
@@ -106,9 +111,16 @@ export const MenuButton = styled.button`
   &:hover,
   &.active {
     span,
-    svg {
+    svg,
+    svg path {
       color: var(--twitter);
       fill: var(--twitter);
+    }
+  }
+
+  &.active {
+    span {
+      font-weight: bold;
     }
   }
 `;
@@ -120,6 +132,7 @@ const iconCSS = css`
   height: 30px;
   color: var(--white);
 `;
+
 export const HomeIcon = styled(Home)`
   ${iconCSS}
 `;
@@ -135,12 +148,16 @@ export const FavoriteIcon = styled(FavoriteBorder)`
 export const ProfileIcon = styled(Person)`
   ${iconCSS}
 `;
+export const SettingsIcon = styled(Settings)`
+  ${iconCSS}
+`;
 
 export const Botside = styled.div`
   margin-top: 20px;
   display: flex;
   align-items: center;
 `;
+
 export const Avatar = styled.div`
   width: 39px;
   height: 39px;
@@ -149,6 +166,7 @@ export const Avatar = styled.div`
   border-radius: 50%;
   background: var(--gray);
 `;
+
 export const ProfileData = styled.div`
   display: none;
 
@@ -181,5 +199,129 @@ export const ExitIcon = styled(ExitToApp)`
         color: var(--like);
       }
     }
+  }
+`;
+
+export const IconWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const NotificationBadge = styled.div`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--twitter);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid var(--primary);
+  z-index: 2;
+  pointer-events: none;
+`;
+
+export const ModalOverlay = styled.div<{ $zIndex?: number }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: ${(props) => props.$zIndex || 1100};
+`;
+
+export const ModalBody = styled.div`
+  background-color: var(--primary);
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  text-align: center;
+
+  h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--white);
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--gray);
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+`;
+
+export const ActionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const DeleteButton = styled.button`
+  width: 100%;
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 20px;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(244, 33, 46, 0.1);
+  }
+`;
+
+export const ConfirmDeleteButton = styled.button`
+  background-color: var(--danger);
+  color: var(--white);
+  border: none;
+  border-radius: 20px;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--danger-hover);
+  }
+`;
+
+export const CancelButton = styled.button`
+  background-color: transparent;
+  color: var(--white);
+  border: 1px solid var(--outline);
+  border-radius: 20px;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 `;
