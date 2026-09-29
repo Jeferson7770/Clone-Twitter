@@ -1,14 +1,28 @@
 import React from 'react';
-
 import { Container } from './styles';
 
-const News: React.FC = () => {
+interface Props {
+  category: string;
+  title: string;
+  url?: string;
+  onClick?: () => void;
+}
+
+const News: React.FC<Props> = ({ category, title, url, onClick }) => {
+  const handleClick = () => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (onClick) {
+      onClick();
+    }
+  };
+
   return (
-    <Container>
-      <span>Assuntos do momento no Brasil</span>
-      <strong>Webinar da Ebac</strong>
+    <Container onClick={handleClick} style={{ cursor: 'pointer' }}>
+      <span>{category}</span>
+      <strong>{title}</strong>
     </Container>
   );
-}
+};
 
 export default News;
