@@ -12,6 +12,10 @@ from api.views import (
     MessageViewSet,
     PasswordResetRequestView,
     PasswordResetConfirmView,
+    HashtagDetailView,
+    HashtagAutocompleteView,
+    TrendingHashtagsView,
+    HashtagTweetsView,
 )
 
 router = DefaultRouter()
@@ -38,6 +42,25 @@ urlpatterns = [
         "notifications/unread_count/",
         UnreadNotificationCountView.as_view(),
         name="unread-count",
+    ),
+    # Rotas de Hashtags
+    path(
+        "hashtags/trending/", TrendingHashtagsView.as_view(), name="trending-hashtags"
+    ),
+    path(
+        "hashtags/autocomplete/",
+        HashtagAutocompleteView.as_view(),
+        name="hashtag-autocomplete",
+    ),
+    path(
+        "hashtags/<str:nome_normalizado>/",
+        HashtagDetailView.as_view(),
+        name="hashtag-detail",
+    ),
+    path(
+        "hashtags/<str:nome_normalizado>/tweets/",
+        HashtagTweetsView.as_view(),
+        name="hashtag-tweets",
     ),
     path("", include(router.urls)),
 ]

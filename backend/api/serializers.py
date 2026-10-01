@@ -10,6 +10,8 @@ from .models import (
     Retweet,
     Message,
     Notification,
+    Hashtag,
+    TweetHashtag,
 )
 
 
@@ -270,7 +272,7 @@ class TweetSerializer(serializers.ModelSerializer):
 # -------------------------------------------------------------------
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
-    recipient = UserSerializer(read_only=True)  
+    recipient = UserSerializer(read_only=True)
     recipient_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source="recipient", write_only=True
     )
@@ -368,3 +370,23 @@ class BookmarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookmark
         fields = ["id", "tweet", "created_at"]
+
+
+# -------------------------------------------------------------------
+# SERIALIZERS DE HASHTAG
+# -------------------------------------------------------------------
+class HashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = "__all__"
+
+
+class TrendingHashtagSerializer(serializers.Serializer):
+    """
+    Serializer para formatar os dados de tendências de hashtags.
+    Como os dados são gerados via agregação na View, usamos um Serializer básico.
+    """
+
+    nome = serializers.CharField()
+    usos_recentes = serializers.IntegerField()
+    score_tendencia = serializers.FloatField()

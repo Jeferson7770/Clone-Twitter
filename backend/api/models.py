@@ -1,5 +1,7 @@
+import re
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -161,6 +163,39 @@ class Notification(models.Model):
         return f"{self.actor} -> {self.recipient}: {self.type}"
 
 
+# -------------------------------------------------------------------
+# SISTEMA DE HASHTAGS
+# -------------------------------------------------------------------
+class Hashtag(models.Model):
+    nome = models.CharField(max_length=100)
+    nome_normalizado = models.CharField(max_length=100, unique=True, db_index=True)
+    quantidade_total_de_uso = models.PositiveIntegerField(default=0)
+    pontuacao_total = models.FloatField(default=0.0, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nome
+
+
+class TweetHashtag(models.Model):
+    hashtag = models.ForeignKey(
+        Hashtag, on_delete=models.CASCADE, related_name="tweet_links"
+    )
+    tweet = models.ForeignKey(
+        Tweet, on_delete=models.CASCADE, related_name="hashtag_links"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        unique_together = ("hashtag", "tweet")
+
+
+# -------------------------------------------------------------------
+# SIGNALS (EXTRAÇÃO, PERFIL E NOTIFICAÇÕES)
+# -------------------------------------------------------------------
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -176,6 +211,7 @@ def create_like_notification(sender, instance, created, **kwargs):
             type="like",
             tweet=instance.tweet,
         )
+
 
 @receiver(post_save, sender=Comment)
 def create_comment_notification(sender, instance, created, **kwargs):
@@ -194,6 +230,7 @@ def create_comment_notification(sender, instance, created, **kwargs):
                 type="comment",
                 tweet=instance.tweet,
             )
+
 
 @receiver(post_save, sender=Tweet)
 def create_post_notification(sender, instance, created, **kwargs):
@@ -231,3 +268,36 @@ def create_follow_notification(sender, instance, created, **kwargs):
         Notification.objects.create(
             recipient=instance.following, actor=instance.follower, type="follow"
         )
+
+
+@receiver(post_save, sender=Tweet)
+def extrair_hashtags_do_tweet(sender, instance, created, **kwargs):
+    """
+    Sinal responsável por extrair as hashtags do conteúdo do Tweet
+    automaticamente sempre que um novo Tweet é criado.
+    """
+    if not created:
+        return
+
+    # Extrai todas as palavras que começam com # (suporta letras, números e acentos)
+    hashtags_encontradas = set(re.findall(r'#([^\s#.,;:!?"\']+)', instance.content))
+
+    for tag in hashtags_encontradas:
+        nome_normalizado = tag.lower()
+
+        # Cria ou recupera a hashtag
+        hashtag_obj, is_new = Hashtag.objects.get_or_create(
+            nome_normalizado=nome_normalizado, defaults={"nome": f"#{tag}"}
+        )
+
+        # Incrementa o uso total de forma segura para concorrência (Race Conditions)
+        if not is_new:
+            Hashtag.objects.filter(id=hashtag_obj.id).update(
+                quantidade_total_de_uso=F("quantidade_total_de_uso") + 1
+            )
+        else:
+            hashtag_obj.quantidade_total_de_uso = 1
+            hashtag_obj.save(update_fields=["quantidade_total_de_uso"])
+
+        # Associa a hashtag ao tweet sem duplicar
+        TweetHashtag.objects.get_or_create(hashtag=hashtag_obj, tweet=instance)

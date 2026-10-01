@@ -1,17 +1,21 @@
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, Count, F, ExpressionWrapper, FloatField
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied  # <-- Importação adicionada
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.pagination import CursorPagination
 
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
+from django.core.cache import cache
 
 from .models import (
     Comment,
@@ -22,6 +26,8 @@ from .models import (
     Profile,
     Retweet,
     Tweet,
+    Hashtag,
+    TweetHashtag,
 )
 from .serializers import (
     CommentSerializer,
@@ -31,6 +37,8 @@ from .serializers import (
     RegisterSerializer,
     TweetSerializer,
     UserSerializer,
+    HashtagSerializer,
+    TrendingHashtagSerializer,
 )
 
 
@@ -206,7 +214,6 @@ class TweetViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
-            # <-- Alterado aqui para usar raise PermissionDenied
             raise PermissionDenied("Você não tem permissão para apagar este tweet.")
         instance.delete()
 
@@ -253,7 +260,6 @@ class TweetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="unread_count")
     def unread_count(self, request):
-        # Lógica provisória retornando 0 para eliminar o erro 404 do frontend
         return Response(
             {"unread_count": 0, "count": 0, "unread": 0}, status=status.HTTP_200_OK
         )
@@ -266,7 +272,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
-            # <-- Alterado aqui para usar raise PermissionDenied
             raise PermissionDenied(
                 "Você não tem permissão para apagar este comentário."
             )
@@ -513,3 +518,124 @@ class MessageViewSet(viewsets.ModelViewSet):
     def unread_count(self, request):
         count = Message.objects.filter(recipient=request.user, is_read=False).count()
         return Response({"unread_count": count})
+
+
+# -------------------------------------------------------------------
+# SISTEMA DE HASHTAGS (NOVAS VIEWS)
+# -------------------------------------------------------------------
+
+
+class TweetCursorPagination(CursorPagination):
+    page_size = 20
+    ordering = "-created_at"
+
+
+class HashtagDetailView(generics.RetrieveAPIView):
+    queryset = Hashtag.objects.all()
+    serializer_class = HashtagSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "nome_normalizado"
+
+
+class HashtagAutocompleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip().lower()
+        if query.startswith("#"):
+            query = query[1:]
+
+        if not query:
+            return Response([])
+
+        # Busca por prefixo, ordena por uso
+        hashtags = Hashtag.objects.filter(nome_normalizado__istartswith=query).order_by(
+            "-quantidade_total_de_uso"
+        )[:10]
+
+        return Response(HashtagSerializer(hashtags, many=True).data)
+
+
+class TrendingHashtagsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        period_param = request.query_params.get("period", "24h")
+        cache_key = f"trending_hashtags_{period_param}"
+
+        resultados = cache.get(cache_key)
+        if resultados:
+            return Response(resultados)
+
+        # Define a janela de tempo
+        horas = 24
+        if period_param == "1h":
+            horas = 1
+        elif period_param == "7d":
+            horas = 168
+
+        tempo_limite = timezone.now() - timedelta(hours=horas)
+
+        # Calcula as tendências com base nas relações recentes
+        trending = (
+            Hashtag.objects.filter(tweet_links__created_at__gte=tempo_limite)
+            .annotate(usos_recentes=Count("tweet_links", distinct=True))
+            .filter(usos_recentes__gt=0)
+            .order_by("-usos_recentes")[:20]
+        )
+
+        data = [
+            {
+                "nome": tag.nome,
+                "usos_recentes": tag.usos_recentes,
+                "score_tendencia": tag.pontuacao_total,
+            }
+            for tag in trending
+        ]
+
+        # Cacheia por 5 minutos para performance
+        cache.set(cache_key, data, 300)
+        return Response(data)
+
+
+class HashtagTweetsView(generics.ListAPIView):
+    serializer_class = TweetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = TweetCursorPagination
+
+    def get_queryset(self):
+        hashtag_nome = self.kwargs["nome_normalizado"].lower()
+        if hashtag_nome.startswith("#"):
+            hashtag_nome = hashtag_nome[1:]
+
+        sort = self.request.query_params.get("sort", "recent")
+
+        # Filtra os tweets que têm a relação com esta hashtag
+        queryset = Tweet.objects.filter(
+            hashtag_links__hashtag__nome_normalizado=hashtag_nome
+        )
+
+        if sort == "relevant":
+            # Calcula o score em tempo real para ordenação:
+            # (Curtidas * 1) + (Comentários * 2) + (Retweets * 3)
+            queryset = (
+                queryset.annotate(
+                    total_likes=Count("likes", distinct=True),
+                    total_comments=Count("comments", distinct=True),
+                    total_retweets=Count("retweets", distinct=True),
+                )
+                .annotate(
+                    relevance_score=ExpressionWrapper(
+                        F("total_likes") * 1
+                        + F("total_comments") * 2
+                        + F("total_retweets") * 3,
+                        output_field=FloatField(),
+                    )
+                )
+                .order_by("-relevance_score", "-created_at")
+            )
+
+            # Muda a ordenação da paginação temporariamente para refletir a relevância
+            self.pagination_class.ordering = "-relevance_score"
+
+        return queryset

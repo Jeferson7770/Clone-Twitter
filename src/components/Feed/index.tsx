@@ -1,57 +1,135 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import Tweet, { type ITweetData } from '../Tweet';
-import { Container, Tab, Tweets, Message } from './styles';
+import {
+  Container,
+  Tab,
+  Tweets,
+  Message,
+  HeaderContainer,
+  SortToggle,
+} from './styles';
 
 interface FeedProps {
   username?: string;
+  hashtag?: string;
 }
 
-const Feed: React.FC<FeedProps> = ({ username }) => {
+type SortOption = 'recent' | 'popular';
+
+const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
   const [tweets, setTweets] = useState<ITweetData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   useEffect(() => {
-    const fetchTweets = async () => {
-      try {
-        const endpoint = username
-          ? `/tweets/?username=${username}`
-          : '/tweets/';
+    const controller = new AbortController();
 
-        const response = await api.get(endpoint);
-        setTweets(response.data);
-      } catch (error) {
-        console.error('Erro ao buscar tweets:', error);
+    const fetchTweets = async () => {
+      setLoading(true);
+      try {
+        let endpoint = '/tweets/';
+        const params = new URLSearchParams();
+
+        if (username) {
+          params.append('username', username);
+        }
+
+        if (hashtag) {
+          // Remove o # e força minúsculas para coincidir com a URL do Django
+          const cleanHashtag = hashtag.replace(/^#/, '').toLowerCase();
+
+          // Aponta para a view especializada "HashtagTweetsView" do seu views.py
+          endpoint = `/hashtags/${cleanHashtag}/tweets/`;
+        }
+
+        if (sortBy === 'popular') {
+          if (hashtag) {
+            params.append('sort', 'relevant'); // Usa o cálculo de relevância da sua HashtagTweetsView
+          } else {
+            params.append('ordering', '-likes_count,-retweets_count');
+          }
+        }
+
+        if (params.toString()) {
+          endpoint += (endpoint.includes('?') ? '&' : '?') + params.toString();
+        }
+
+        const response = await api.get(endpoint, {
+          signal: controller.signal,
+        });
+
+        // A sua HashtagTweetsView usa TweetCursorPagination, logo os dados vêm dentro de "results"
+        const fetchedTweets: ITweetData[] = response.data.results
+          ? response.data.results
+          : response.data;
+
+        // Remove os tweets duplicados baseando-se no ID (Resolve o erro das chaves duplicadas no React)
+        const uniqueTweets = Array.from(
+          new Map(fetchedTweets.map((tweet) => [tweet.id, tweet])).values()
+        );
+
+        setTweets(uniqueTweets);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== 'CanceledError') {
+          console.error('Erro ao buscar tweets:', error);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchTweets();
-  }, [username]);
+
+    return () => controller.abort();
+  }, [username, hashtag, sortBy]);
 
   const handleDeleteTweet = (tweetId: number | string) => {
     setTweets((prevTweets) => prevTweets.filter((t) => t.id !== tweetId));
   };
 
+  const getTabTitle = () => {
+    if (hashtag) return hashtag.startsWith('#') ? hashtag : `#${hashtag}`;
+    if (username) return `Tweets de @${username}`;
+    return 'Página Inicial';
+  };
+
   return (
     <Container>
+      <HeaderContainer>
+        <Tab>{getTabTitle()}</Tab>
 
-      {!username && <Tab>Página Inicial</Tab>}
+        {!username && (
+          <SortToggle>
+            <button
+              className={sortBy === 'recent' ? 'active' : ''}
+              onClick={() => setSortBy('recent')}
+            >
+              Mais recentes
+            </button>
+            <button
+              className={sortBy === 'popular' ? 'active' : ''}
+              onClick={() => setSortBy('popular')}
+            >
+              Em alta
+            </button>
+          </SortToggle>
+        )}
+      </HeaderContainer>
 
       <Tweets>
         {loading ? (
-          <Message>Carregando tweets...</Message>
+          <Message>A carregar...</Message>
         ) : tweets.length > 0 ? (
-          tweets.map((tweet, index) => (
+          tweets.map((tweet) => (
             <Tweet
-              key={`${tweet.id}-${index}`}
+              key={`tweet-${tweet.id}`}
               tweet={tweet}
               onDelete={handleDeleteTweet}
             />
           ))
         ) : (
-          <Message>Nenhum tweet no momento.</Message>
+          <Message>Nenhum tweet encontrado para esta hashtag.</Message>
         )}
       </Tweets>
     </Container>

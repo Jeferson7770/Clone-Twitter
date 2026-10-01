@@ -1,4 +1,10 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 import { useAuth } from './hooks/useAuth';
 import { AuthPage } from './pages/Auth';
@@ -12,6 +18,19 @@ import FavoritesPage from './components/FavoritesPage';
 import MessagesPage from './pages/Messages';
 import SettingsPage from './pages/Settings';
 import GlobalStyles, { LoadingContainer } from './styles/GlobalStyles';
+
+const FeedWrapper = () => {
+  const { hashtag } = useParams();
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get('q');
+
+  let activeHashtag = hashtag;
+  if (!activeHashtag && query) {
+    activeHashtag = query.replace('#', '');
+  }
+
+  return <Feed hashtag={activeHashtag} />;
+};
 
 export function App() {
   const { user, loading } = useAuth();
@@ -44,6 +63,9 @@ export function App() {
           element={user ? <Layout /> : <Navigate to="/auth" replace />}
         >
           <Route index element={<Feed />} />
+
+          <Route path="search" element={<FeedWrapper />} />
+          <Route path="hashtag/:hashtag" element={<FeedWrapper />} />
 
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/:username" element={<ProfilePage />} />
