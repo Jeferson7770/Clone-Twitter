@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Container, Item, Title } from './styles';
+import { Container, Item, Title, ScrollableContent } from './styles';
 
 interface Props {
   title: string;
@@ -14,9 +14,12 @@ const List: React.FC<Props> = ({ title, elements }) => {
         <Title>{title}</Title>
       </Item>
 
-      {elements.map((element, index) => (
-        <Item key={index}>{element}</Item>
-      ))}
+      {/* Envolvemos os itens neste novo contentor com barra de rolagem */}
+      <ScrollableContent>
+        {elements.map((element, index) => (
+          <Item key={index}>{element}</Item>
+        ))}
+      </ScrollableContent>
     </Container>
   );
 };

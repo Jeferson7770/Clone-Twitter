@@ -56,6 +56,26 @@ const MenuBar: React.FC = () => {
     }
   }, []);
 
+  // Escuta o evento disparado pela SideBar para abrir o modal de notificações
+  useEffect(() => {
+    const handleOpenNotificationsEvent = () => {
+      setIsNotificationsModalOpen(true);
+      setUnreadCount(0);
+    };
+
+    window.addEventListener(
+      'open-notifications-modal',
+      handleOpenNotificationsEvent
+    );
+
+    return () => {
+      window.removeEventListener(
+        'open-notifications-modal',
+        handleOpenNotificationsEvent
+      );
+    };
+  }, []);
+
   useEffect(() => {
     if (!authUser) return;
 

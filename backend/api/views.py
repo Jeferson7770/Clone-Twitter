@@ -1,44 +1,45 @@
+import copy
+import re
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Q, Count, F, ExpressionWrapper, FloatField
+from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.db.models import Count, ExpressionWrapper, F, FloatField, Q
+from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.pagination import CursorPagination
-
-from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
-from django.core.cache import cache
 
 from .models import (
     Comment,
     Follow,
+    Hashtag,
     Like,
     Message,
     Notification,
     Profile,
     Retweet,
     Tweet,
-    Hashtag,
     TweetHashtag,
 )
 from .serializers import (
     CommentSerializer,
+    HashtagSerializer,
     MessageSerializer,
     NotificationSerializer,
     ProfileSerializer,
     RegisterSerializer,
+    TrendingHashtagSerializer,
     TweetSerializer,
     UserSerializer,
-    HashtagSerializer,
-    TrendingHashtagSerializer,
 )
 
 
@@ -84,7 +85,7 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
                 {"detail": "Conta eliminada com sucesso."},
                 status=status.HTTP_204_NO_CONTENT,
             )
-        except Exception as e:
+        except Exception:
             return Response(
                 {
                     "error": "Ocorreu um erro ao tentar eliminar a tua conta. Tenta novamente."
@@ -169,53 +170,248 @@ class TweetViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        return Tweet.objects.all()
+        return Tweet.objects.all().select_related("author", "author__profile")
 
-    def list(self, request, *args, **kwargs):
+    def _compute_tweet_metrics(self, tweet_obj):
+        """Calcula de forma garantida as contagens e a pontuação de engajamento do tweet."""
+        # Curtidas
+        if hasattr(tweet_obj, "total_likes") and tweet_obj.total_likes is not None:
+            likes = tweet_obj.total_likes
+        elif hasattr(tweet_obj, "likes"):
+            likes = tweet_obj.likes.count()
+        elif hasattr(tweet_obj, "like_set"):
+            likes = tweet_obj.like_set.count()
+        else:
+            likes = Like.objects.filter(tweet_id=tweet_obj.id).count()
+
+        # Comentários
+        if (
+            hasattr(tweet_obj, "total_comments")
+            and tweet_obj.total_comments is not None
+        ):
+            comments = tweet_obj.total_comments
+        elif hasattr(tweet_obj, "comments"):
+            comments = tweet_obj.comments.count()
+        elif hasattr(tweet_obj, "comment_set"):
+            comments = tweet_obj.comment_set.count()
+        else:
+            comments = Comment.objects.filter(tweet_id=tweet_obj.id).count()
+
+        # Retweets
+        if (
+            hasattr(tweet_obj, "total_retweets")
+            and tweet_obj.total_retweets is not None
+        ):
+            retweets = tweet_obj.total_retweets
+        elif hasattr(tweet_obj, "retweets"):
+            retweets = tweet_obj.retweets.count()
+        elif hasattr(tweet_obj, "retweet_set"):
+            retweets = tweet_obj.retweet_set.count()
+        else:
+            retweets = Retweet.objects.filter(tweet_id=tweet_obj.id).count()
+
+        score = (likes * 1) + (comments * 2) + (retweets * 3)
+        return likes, comments, retweets, float(score)
+
+    def _get_timeline_response(self, request, is_popular_override=None):
         username = request.query_params.get("username")
 
+        if is_popular_override is not None:
+            is_popular = is_popular_override
+        else:
+            is_popular = False
+            popular_terms = {
+                "popular",
+                "alta",
+                "em_alta",
+                "em-alta",
+                "em alta",
+                "trending",
+                "top",
+                "hot",
+                "score",
+                "engagement",
+                "relevant",
+                "destaque",
+                "likes",
+                "curtidas",
+                "mais_curtidos",
+                "most_liked",
+            }
+
+            for key, val in request.query_params.items():
+                k_lower = str(key).lower()
+                v_lower = str(val).lower()
+
+                if any(term in v_lower for term in popular_terms):
+                    is_popular = True
+                    break
+
+                if k_lower in [
+                    "tab",
+                    "tabindex",
+                    "index",
+                    "type",
+                    "filter",
+                    "sort",
+                    "sort_by",
+                    "ordering",
+                    "mode",
+                    "feed",
+                    "view",
+                ]:
+                    if (
+                        v_lower
+                        in [
+                            "1",
+                            "2",
+                            "popular",
+                            "alta",
+                            "em_alta",
+                            "em-alta",
+                            "trending",
+                            "top",
+                            "hot",
+                        ]
+                        or "-" in v_lower
+                    ):
+                        is_popular = True
+                        break
+
         if username:
-            tweets = Tweet.objects.filter(author__username=username)
-            retweets = Retweet.objects.filter(user__username=username).select_related(
-                "tweet"
+            tweets_qs = Tweet.objects.filter(author__username=username).select_related(
+                "author", "author__profile"
             )
+            retweets_qs = Retweet.objects.filter(
+                user__username=username
+            ).select_related("tweet", "tweet__author", "tweet__author__profile")
         else:
             followed_users = Follow.objects.filter(follower=request.user).values_list(
                 "following", flat=True
             )
             feed_users = list(followed_users) + [request.user.id]
 
-            tweets = Tweet.objects.filter(author__in=feed_users)
-            retweets = Retweet.objects.filter(user__in=feed_users).select_related(
-                "tweet"
+            tweets_qs = Tweet.objects.filter(author__in=feed_users).select_related(
+                "author", "author__profile"
+            )
+            retweets_qs = Retweet.objects.filter(user__in=feed_users).select_related(
+                "tweet", "tweet__author", "tweet__author__profile"
             )
 
         timeline = []
 
-        for tweet in tweets:
+        for tweet in tweets_qs:
+            l, c, r, score = self._compute_tweet_metrics(tweet)
+            tweet.likes_count = l
+            tweet.comments_count = c
+            tweet.retweets_count = r
+            tweet.score = score
             tweet.sort_date = tweet.created_at
             timeline.append(tweet)
 
-        for rt in retweets:
-            tweet_obj = rt.tweet
-            tweet_obj.is_retweet_instance = True
-            tweet_obj.sort_date = rt.created_at
-            timeline.append(tweet_obj)
+        for rt in retweets_qs:
+            if rt.tweet:
+                t_copy = copy.copy(rt.tweet)
+                l, c, r, score = self._compute_tweet_metrics(t_copy)
+                t_copy.is_retweet_instance = True
+                t_copy.likes_count = l
+                t_copy.comments_count = c
+                t_copy.retweets_count = r
+                t_copy.score = score
+                t_copy.sort_date = rt.created_at
+                timeline.append(t_copy)
 
-        timeline.sort(key=lambda x: getattr(x, "sort_date", x.created_at), reverse=True)
+        if is_popular:
+            # Ordena por pontuação de engajamento (decrescente) e depois por data
+            timeline.sort(
+                key=lambda x: (
+                    getattr(x, "score", 0.0),
+                    getattr(x, "sort_date", x.created_at),
+                ),
+                reverse=True,
+            )
+        else:
+            # Ordena por data mais recente
+            timeline.sort(
+                key=lambda x: getattr(x, "sort_date", x.created_at),
+                reverse=True,
+            )
 
         serializer = self.get_serializer(
             timeline, many=True, context={"request": request}
         )
-        return Response(serializer.data)
+        data = serializer.data
+
+        # Anexa todas as contagens e scores diretamente em cada item do JSON retornado
+        for item, tweet_obj in zip(data, timeline):
+            l = getattr(tweet_obj, "likes_count", 0)
+            c = getattr(tweet_obj, "comments_count", 0)
+            r = getattr(tweet_obj, "retweets_count", 0)
+            s = getattr(tweet_obj, "score", 0.0)
+
+            item["likes_count"] = l
+            item["comments_count"] = c
+            item["retweets_count"] = r
+            item["total_likes"] = l
+            item["total_comments"] = c
+            item["total_retweets"] = r
+            item["score"] = s
+            item["engagement_score"] = s
+
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        return self._get_timeline_response(request)
+
+    @action(detail=False, methods=["get"], url_path="em_alta")
+    def em_alta(self, request):
+        return self._get_timeline_response(request, is_popular_override=True)
+
+    @action(detail=False, methods=["get"], url_path="popular")
+    def popular(self, request):
+        return self._get_timeline_response(request, is_popular_override=True)
+
+    @action(detail=False, methods=["get"], url_path="trending")
+    def trending(self, request):
+        return self._get_timeline_response(request, is_popular_override=True)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        tweet = serializer.save(author=self.request.user)
+
+        hashtags = set(re.findall(r"#(\w+)", tweet.content))
+        for tag_name in hashtags:
+            tag_normalizado = tag_name.lower()
+            hashtag_obj, _ = Hashtag.objects.get_or_create(
+                nome_normalizado=tag_normalizado, defaults={"nome": tag_name}
+            )
+            TweetHashtag.objects.get_or_create(tweet=tweet, hashtag=hashtag_obj)
+
+            hashtag_obj.quantidade_total_de_uso = TweetHashtag.objects.filter(
+                hashtag=hashtag_obj
+            ).count()
+            hashtag_obj.save()
 
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
             raise PermissionDenied("Você não tem permissão para apagar este tweet.")
+
+        hashtag_ids = list(
+            TweetHashtag.objects.filter(tweet=instance).values_list(
+                "hashtag_id", flat=True
+            )
+        )
+
         instance.delete()
+
+        for h_id in hashtag_ids:
+            try:
+                h = Hashtag.objects.get(id=h_id)
+                h.quantidade_total_de_uso = TweetHashtag.objects.filter(
+                    hashtag=h
+                ).count()
+                h.save()
+            except Hashtag.DoesNotExist:
+                pass
 
     @action(detail=True, methods=["post"])
     def like(self, request, pk=None):
@@ -241,7 +437,7 @@ class TweetViewSet(viewsets.ModelViewSet):
             author=request.user,
             tweet=tweet,
             content=content,
-            parent_id=parent_id,
+            parent_id=parent_id if parent_id else None,
         )
 
         serializer = CommentSerializer(comment, context={"request": request})
@@ -457,7 +653,6 @@ class MessageViewSet(viewsets.ModelViewSet):
             | (Q(sender=other_user) & Q(recipient=request.user))
         ).order_by("created_at")
 
-        # Marca como lidas as mensagens recebidas neste chat
         messages.filter(recipient=request.user, is_read=False).update(is_read=True)
 
         serializer = self.get_serializer(messages, many=True)
@@ -506,7 +701,6 @@ class MessageViewSet(viewsets.ModelViewSet):
 
             results.append(user_data)
 
-        # Ordena: mensagens não lidas e chats mais recentes ficam no topo
         results.sort(
             key=lambda x: (x["has_unread"], x["last_message_time"]),
             reverse=True,
@@ -521,13 +715,8 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 
 # -------------------------------------------------------------------
-# SISTEMA DE HASHTAGS (NOVAS VIEWS)
+# HASHTAGS
 # -------------------------------------------------------------------
-
-
-class TweetCursorPagination(CursorPagination):
-    page_size = 20
-    ordering = "-created_at"
 
 
 class HashtagDetailView(generics.RetrieveAPIView):
@@ -548,7 +737,6 @@ class HashtagAutocompleteView(APIView):
         if not query:
             return Response([])
 
-        # Busca por prefixo, ordena por uso
         hashtags = Hashtag.objects.filter(nome_normalizado__istartswith=query).order_by(
             "-quantidade_total_de_uso"
         )[:10]
@@ -560,64 +748,76 @@ class TrendingHashtagsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        period_param = request.query_params.get("period", "24h")
-        cache_key = f"trending_hashtags_{period_param}"
+        try:
+            trending = (
+                Hashtag.objects.filter(quantidade_total_de_uso__gt=0)
+                .annotate(
+                    total_likes=Count("tweet_links__tweet__likes", distinct=True),
+                    total_comments=Count("tweet_links__tweet__comments", distinct=True),
+                    total_retweets=Count("tweet_links__tweet__retweets", distinct=True),
+                )
+                .annotate(
+                    score_tendencia=ExpressionWrapper(
+                        F("quantidade_total_de_uso") * 2
+                        + F("total_likes") * 1
+                        + F("total_comments") * 2
+                        + F("total_retweets") * 3,
+                        output_field=FloatField(),
+                    )
+                )
+                .order_by("-score_tendencia")[:20]
+            )
 
-        resultados = cache.get(cache_key)
-        if resultados:
-            return Response(resultados)
+            data = [
+                {
+                    "nome": tag.nome,
+                    "nome_normalizado": tag.nome_normalizado,
+                    "usos_recentes": tag.quantidade_total_de_uso,
+                    "score_tendencia": getattr(
+                        tag, "score_tendencia", tag.quantidade_total_de_uso
+                    ),
+                }
+                for tag in trending
+            ]
+            return Response(data, status=status.HTTP_200_OK)
 
-        # Define a janela de tempo
-        horas = 24
-        if period_param == "1h":
-            horas = 1
-        elif period_param == "7d":
-            horas = 168
-
-        tempo_limite = timezone.now() - timedelta(hours=horas)
-
-        # Calcula as tendências com base nas relações recentes
-        trending = (
-            Hashtag.objects.filter(tweet_links__created_at__gte=tempo_limite)
-            .annotate(usos_recentes=Count("tweet_links", distinct=True))
-            .filter(usos_recentes__gt=0)
-            .order_by("-usos_recentes")[:20]
-        )
-
-        data = [
-            {
-                "nome": tag.nome,
-                "usos_recentes": tag.usos_recentes,
-                "score_tendencia": tag.pontuacao_total,
-            }
-            for tag in trending
-        ]
-
-        # Cacheia por 5 minutos para performance
-        cache.set(cache_key, data, 300)
-        return Response(data)
+        except Exception as e:
+            print(f"Erro ao buscar tendências: {e}")
+            return Response([], status=status.HTTP_200_OK)
 
 
 class HashtagTweetsView(generics.ListAPIView):
     serializer_class = TweetSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = TweetCursorPagination
 
     def get_queryset(self):
         hashtag_nome = self.kwargs["nome_normalizado"].lower()
         if hashtag_nome.startswith("#"):
             hashtag_nome = hashtag_nome[1:]
 
-        sort = self.request.query_params.get("sort", "recent")
+        popular_keywords = {
+            "popular",
+            "alta",
+            "em_alta",
+            "em-alta",
+            "trending",
+            "top",
+            "engagement",
+            "relevant",
+            "score",
+        }
+        is_popular = False
+        for param in ["sort", "ordering", "tab", "filter", "type"]:
+            val = self.request.query_params.get(param)
+            if val and any(k in str(val).lower() for k in popular_keywords):
+                is_popular = True
+                break
 
-        # Filtra os tweets que têm a relação com esta hashtag
         queryset = Tweet.objects.filter(
             hashtag_links__hashtag__nome_normalizado=hashtag_nome
         )
 
-        if sort == "relevant":
-            # Calcula o score em tempo real para ordenação:
-            # (Curtidas * 1) + (Comentários * 2) + (Retweets * 3)
+        if is_popular:
             queryset = (
                 queryset.annotate(
                     total_likes=Count("likes", distinct=True),
@@ -634,8 +834,7 @@ class HashtagTweetsView(generics.ListAPIView):
                 )
                 .order_by("-relevance_score", "-created_at")
             )
-
-            # Muda a ordenação da paginação temporariamente para refletir a relevância
-            self.pagination_class.ordering = "-relevance_score"
+        else:
+            queryset = queryset.order_by("-created_at")
 
         return queryset

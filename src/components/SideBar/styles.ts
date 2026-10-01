@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-
 import { Search } from '../../styles/Icons';
 
 export const Container = styled.div`
@@ -8,7 +7,6 @@ export const Container = styled.div`
   @media (min-width: 1000px) {
     display: flex;
     flex-direction: column;
-
     width: min(399px, 100%);
   }
 `;
@@ -16,12 +14,10 @@ export const Container = styled.div`
 export const SearchWrapper = styled.div`
   padding: 10px 24px;
   width: min(399px, 100%);
-
-  position: fixed;
+  position: relative;
   top: 0;
   z-index: 2;
   background: var(--primary);
-
   max-height: 57px;
 `;
 
@@ -42,7 +38,6 @@ export const SearchInput = styled.input`
     top: -33px;
     left: 15px;
     z-index: 1;
-
     transition: 180ms ease-in-out;
   }
 
@@ -60,7 +55,6 @@ export const SearchInput = styled.input`
 export const SearchIcon = styled(Search)`
   width: 27px;
   height: 27px;
-
   fill: var(--gray);
 `;
 
@@ -73,4 +67,46 @@ export const Body = styled.div`
   > div + div {
     margin-top: 15px;
   }
+`;
+
+export const HashtagDropdown = styled.div`
+  position: absolute;
+  top: 45px;
+  left: 0;
+  right: 0;
+  background-color: var(--primary);
+  border: 1px solid var(--outline);
+  border-radius: 8px;
+  z-index: 10;
+  overflow: hidden;
+`;
+
+export const HashtagItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--outline);
+  color: var(--twitter);
+  font-weight: bold;
+
+  &:hover {
+    background: var(--search);
+  }
+`;
+
+export const NotificationAlert = styled.div`
+  padding: 10px 15px;
+  color: var(--twitter, #1da1f2);
+  font-weight: bold;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--search);
+  }
+`;
+
+export const StatusMessage = styled.span`
+  display: block;
+  padding: 10px 15px;
+  color: var(--gray);
+  font-size: 14px;
 `;

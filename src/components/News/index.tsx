@@ -17,10 +17,13 @@ const News: React.FC<Props> = ({ category, title, url, onClick }) => {
     }
   };
 
+  // Garante que o título exiba no máximo um '#' no início (ex: '##Lula' vira '#Lula')
+  const formattedTitle = title.replace(/^#+/, '#');
+
   return (
     <Container onClick={handleClick} style={{ cursor: 'pointer' }}>
       <span>{category}</span>
-      <strong>{title}</strong>
+      <strong>{formattedTitle}</strong>
     </Container>
   );
 };

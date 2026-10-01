@@ -14,6 +14,10 @@ import {
   SearchInput,
   SearchIcon,
   Body,
+  HashtagDropdown,
+  HashtagItem,
+  NotificationAlert,
+  StatusMessage,
 } from './styles';
 
 interface IUserSuggestion {
@@ -40,8 +44,8 @@ interface IRssNewsItem {
 
 interface ITrendingHashtag {
   nome: string;
-  usos_recentes: number;
-  score_tendencia: number;
+  usos_recentes?: number;
+  score_tendencia?: number;
 }
 
 const SideBar: React.FC = () => {
@@ -106,7 +110,7 @@ const SideBar: React.FC = () => {
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchTerm.startsWith('#')) {
-        const cleanTerm = searchTerm.replace('#', '').trim();
+        const cleanTerm = searchTerm.replace(/^#+/, '').trim();
         if (cleanTerm.length > 0) {
           try {
             const response = await api.get(
@@ -179,7 +183,7 @@ const SideBar: React.FC = () => {
 
   return (
     <Container>
-      <SearchWrapper style={{ position: 'relative' }}>
+      <SearchWrapper>
         <SearchInput
           placeholder="Buscar no Twitter"
           value={searchTerm}
@@ -187,10 +191,10 @@ const SideBar: React.FC = () => {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && searchTerm.trim() !== '') {
               if (searchTerm.startsWith('#')) {
-                const cleanTerm = searchTerm.replace('#', '').trim();
+                const cleanTerm = searchTerm.replace(/^#+/, '').trim();
                 navigate(`/hashtag/${cleanTerm}`);
               } else {
-                navigate(`/search?q=${searchTerm.trim()}`);
+                navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
               }
               setSearchTerm('');
             }
@@ -199,56 +203,38 @@ const SideBar: React.FC = () => {
         <SearchIcon />
 
         {searchTerm.startsWith('#') && hashtagResults.length > 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '45px',
-              left: 0,
-              right: 0,
-              backgroundColor: 'var(--primary)',
-              border: '1px solid var(--outline)',
-              borderRadius: '8px',
-              zIndex: 10,
-              overflow: 'hidden',
-            }}
-          >
-            {hashtagResults.map((tag, index) => (
-              <div
-                key={index}
-                style={{
-                  padding: '12px 16px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid var(--outline)',
-                  color: 'var(--twitter)',
-                  fontWeight: 'bold',
-                }}
-                onClick={() => {
-                  navigate(`/hashtag/${tag.nome}`);
-                  setSearchTerm('');
-                }}
-              >
-                #{tag.nome}
-              </div>
-            ))}
-          </div>
+          <HashtagDropdown>
+            {hashtagResults.map((tag, index) => {
+              const cleanTagName = tag.nome.replace(/^#+/, '');
+              return (
+                <HashtagItem
+                  key={index}
+                  onClick={() => {
+                    navigate(`/hashtag/${cleanTagName}`);
+                    setSearchTerm('');
+                  }}
+                >
+                  #{cleanTagName}
+                </HashtagItem>
+              );
+            })}
+          </HashtagDropdown>
         )}
       </SearchWrapper>
 
       <StickyBox offsetTop={20} offsetBottom={20}>
         <Body>
           {unreadCount > 0 && (
-            <div
-              onClick={() => navigate('/notifications')}
-              style={{
-                padding: '10px 15px',
-                color: '#1da1f2',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
+            <NotificationAlert
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent('open-notifications-modal')
+                )
+              }
             >
-              🔔 Tens {unreadCount} nova{unreadCount > 1 ? 's' : ''} notificaç
+              🔔 Tens {unreadCount} nova{unreadCount > 1 ? 's' : ''} notificação
               {unreadCount > 1 ? 'ões' : 'ão'}!
-            </div>
+            </NotificationAlert>
           )}
 
           <List
@@ -272,28 +258,14 @@ const SideBar: React.FC = () => {
                         />
                       ))
                   : [
-                      <span
-                        key="not-found"
-                        style={{
-                          padding: '10px 15px',
-                          color: 'var(--gray)',
-                          fontSize: '14px',
-                        }}
-                      >
+                      <StatusMessage key="not-found">
                         Nenhum utilizador encontrado.
-                      </span>,
+                      </StatusMessage>,
                     ]
                 : [
-                    <span
-                      key="loading"
-                      style={{
-                        padding: '10px 15px',
-                        color: 'var(--gray)',
-                        fontSize: '14px',
-                      }}
-                    >
+                    <StatusMessage key="loading">
                       A carregar sugestões...
-                    </span>,
+                    </StatusMessage>,
                   ]
             }
           />
@@ -303,26 +275,22 @@ const SideBar: React.FC = () => {
             elements={
               loadingContent
                 ? [
-                    <span
-                      key="loading-news"
-                      style={{
-                        padding: '10px 15px',
-                        color: 'var(--gray)',
-                        fontSize: '14px',
-                      }}
-                    >
+                    <StatusMessage key="loading-news">
                       A carregar...
-                    </span>,
+                    </StatusMessage>,
                   ]
                 : [
-                    ...trending.map((item, index) => (
-                      <News
-                        key={`trend-${index}`}
-                        category="Tendência na sua rede"
-                        title={`#${item.nome}`}
-                        url={`/hashtag/${item.nome}`}
-                      />
-                    )),
+                    ...trending.map((item, index) => {
+                      const cleanTagName = item.nome.replace(/^#+/, '');
+                      return (
+                        <News
+                          key={`trend-${index}`}
+                          category="Tendência na sua rede"
+                          title={`#${cleanTagName}`}
+                          onClick={() => navigate(`/hashtag/${cleanTagName}`)}
+                        />
+                      );
+                    }),
                     ...newsList.map((news) => (
                       <News
                         key={news.id}
