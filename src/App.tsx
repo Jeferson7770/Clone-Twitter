@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Routes,
   Route,
@@ -21,7 +21,6 @@ import MessagesPage from './pages/Messages';
 import SettingsPage from './pages/Settings';
 import GlobalStyles, { LoadingContainer } from './styles/GlobalStyles';
 import { lightTheme, darkTheme } from './styles/themes';
-
 
 const FeedWrapper = () => {
   const { hashtag } = useParams();

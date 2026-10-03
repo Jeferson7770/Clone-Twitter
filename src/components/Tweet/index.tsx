@@ -90,7 +90,7 @@ export interface ILikedUser {
   first_name?: string;
   is_following?: boolean;
   profile?: {
-    avatar?: string;
+    avatar?: string | null; 
   };
 }
 
@@ -453,16 +453,19 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     month: 'short',
   });
 
-  const getAvatarUrl = (avatarPath?: string) => {
-    if (!avatarPath) return 'none';
-    let baseURL = 'http://localhost:8000';
-    const meta = import.meta as unknown as { env: Record<string, string> };
-    if (typeof import.meta !== 'undefined' && meta.env)
-      baseURL = meta.env.VITE_API_URL || baseURL;
-    return avatarPath.startsWith('http')
-      ? `url(${avatarPath})`
-      : `url(${baseURL}${avatarPath})`;
-  };
+const getAvatarUrl = (avatarPath?: string | null) => {
+  if (!avatarPath) return 'none';
+
+  let baseURL = 'http://localhost:8000';
+  const meta = import.meta as unknown as { env: Record<string, string> };
+  if (typeof import.meta !== 'undefined' && meta.env) {
+    baseURL = meta.env.VITE_API_URL || baseURL;
+  }
+
+  return avatarPath.startsWith('http')
+    ? `url(${avatarPath})`
+    : `url(${baseURL}${avatarPath})`;
+};
 
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
     return commentList.map((comment, index) => (
