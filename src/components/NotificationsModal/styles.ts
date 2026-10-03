@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Favorite, Chat, PersonAdd } from 'styled-icons/material'; // Adicionado PersonAdd
+import { Favorite, Chat, PersonAdd } from 'styled-icons/material';
 import { ArrowRepeat } from 'styled-icons/bootstrap';
 import { Twitter } from 'styled-icons/boxicons-logos';
 
@@ -17,14 +17,14 @@ export const Overlay = styled.div`
 `;
 
 export const ModalContainer = styled.div`
-  background: #000000;
+  background: var(--primary); /* CORRIGIDO: Agora acompanha o tema */
   width: 100%;
   max-width: 600px;
   max-height: 80vh;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* CORRIGIDO: Sombra visível em ambos os temas */
   overflow: hidden;
   z-index: 10000;
 `;
@@ -59,7 +59,12 @@ export const CloseButton = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(
+      128,
+      128,
+      128,
+      0.2
+    ); /* CORRIGIDO: Hover visível em fundos brancos e pretos */
   }
 `;
 
@@ -84,7 +89,12 @@ export const NotificationItem = styled.div`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(
+      128,
+      128,
+      128,
+      0.1
+    ); /* CORRIGIDO: Hover visível em fundos brancos e pretos */
   }
 `;
 
@@ -120,7 +130,7 @@ export const PostIcon = styled(Twitter)`
 export const FollowIcon = styled(PersonAdd)`
   width: 30px;
   height: 30px;
-  fill: var(--twitter); 
+  fill: var(--twitter);
 `;
 
 export const ContentArea = styled.div`

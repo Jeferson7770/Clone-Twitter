@@ -22,7 +22,9 @@ export const Container = styled.div`
   > strong {
     font-size: 14px;
     line-height: 18px;
-    color: #fff;
+
+    /* CORREÇÃO: Usar a variável dinâmica em vez do branco fixo */
+    color: var(--white);
 
     /* Limita o texto em até 2 linhas e adiciona '...' se for maior */
     display: -webkit-box;

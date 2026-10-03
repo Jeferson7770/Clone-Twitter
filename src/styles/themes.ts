@@ -1,0 +1,31 @@
+export const darkTheme = {
+  primary: '#000',
+  secondary: '#15181C',
+  search: '#202327',
+  white: '#D9D9D9',
+  gray: '#7a7a7a',
+  outline: '#2F3336',
+  retweet: '#00C06B',
+  like: '#e8265e',
+  twitter: '#33A1F2',
+  twitterDarkHover: '#011017',
+  twitterLightHover: '#2c8ed6',
+  danger: '#f4212e',
+  dangerHover: '#dc1e29',
+};
+
+export const lightTheme = {
+  primary: '#FFFFFF',
+  secondary: '#F7F9F9',
+  search: '#EBEEF0',
+  white: '#0F1419',
+  gray: '#536471',
+  outline: '#EFF3F4',
+  retweet: '#00BA7C',
+  like: '#F91880',
+  twitter: '#1D9BF0',
+  twitterDarkHover: '#E7F5FE',
+  twitterLightHover: '#1A8CD8',
+  danger: '#F4212E',
+  dangerHover: '#dc1e29',
+};

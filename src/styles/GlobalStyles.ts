@@ -25,20 +25,21 @@ export default createGlobalStyle`
     background: var(--primary);
   }
 
+  /* Conecta o ThemeProvider do React diretamente às tuas variáveis CSS globais */
   :root {
-    --primary: #000;
-    --secondary: #15181C;
-    --search: #202327;
-    --white: #D9D9D9;
-    --gray: #7a7a7a;
-    --outline: #2F3336;
-    --retweet: #00C06B;
-    --like: #e8265e;
-    --twitter: #33A1F2;
-    --twitter-dark-hover: #011017;
-    --twitter-light-hover: #2c8ed6;
-    --danger: #f4212e;
-    --danger-hover: #dc1e29;
+    --primary: ${(props) => props.theme.primary};
+    --secondary: ${(props) => props.theme.secondary};
+    --search: ${(props) => props.theme.search};
+    --white: ${(props) => props.theme.white};
+    --gray: ${(props) => props.theme.gray};
+    --outline: ${(props) => props.theme.outline};
+    --retweet: ${(props) => props.theme.retweet};
+    --like: ${(props) => props.theme.like};
+    --twitter: ${(props) => props.theme.twitter};
+    --twitter-dark-hover: ${(props) => props.theme.twitterDarkHover};
+    --twitter-light-hover: ${(props) => props.theme.twitterLightHover};
+    --danger: ${(props) => props.theme.danger};
+    --danger-hover: ${(props) => props.theme.dangerHover};
   }
 `;
 

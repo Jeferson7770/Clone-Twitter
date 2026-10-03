@@ -9,6 +9,8 @@ import {
   ExitToApp,
   Twitter,
   Settings,
+  LightMode, // Novo ícone importado
+  DarkMode, // Novo ícone importado
 } from '../../styles/Icons';
 
 export const Container = styled.div`
@@ -149,6 +151,14 @@ export const ProfileIcon = styled(Person)`
   ${iconCSS}
 `;
 export const SettingsIcon = styled(Settings)`
+  ${iconCSS}
+`;
+
+// Novos ícones de tema adicionados aqui
+export const ThemeLightIcon = styled(LightMode)`
+  ${iconCSS}
+`;
+export const ThemeDarkIcon = styled(DarkMode)`
   ${iconCSS}
 `;
 

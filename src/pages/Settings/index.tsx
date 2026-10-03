@@ -19,7 +19,14 @@ import {
   CancelButton,
 } from './styles';
 
-const Settings: React.FC = () => {
+// 1. Definir a interface para as props que vêm do App.js
+interface SettingsProps {
+  toggleTheme?: () => void;
+  currentTheme?: string;
+}
+
+// 2. Receber as props no componente
+const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -29,7 +36,7 @@ const Settings: React.FC = () => {
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      await api.delete('/me/'); 
+      await api.delete('/me/');
 
       if (signOut) {
         signOut();
@@ -54,6 +61,34 @@ const Settings: React.FC = () => {
       </Header>
 
       <Content>
+        {/* Nova secção de Aparência */}
+        {toggleTheme && currentTheme && (
+          <div style={{ marginBottom: '40px' }}>
+            <Title>Aparência</Title>
+            <Description>
+              O tema atual é:{' '}
+              <strong>
+                {currentTheme === 'light' ? 'Claro ☀️' : 'Escuro 🌙'}
+              </strong>
+            </Description>
+            <button
+              onClick={toggleTheme}
+              style={{
+                marginTop: '10px',
+                padding: '10px 20px',
+                borderRadius: '20px',
+                border: '1px solid var(--twitter)',
+                background: 'transparent',
+                color: 'var(--twitter)',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              Alternar Tema
+            </button>
+          </div>
+        )}
+
         <Title>A tua conta</Title>
         <Description>
           Apagar a conta significa dizer adeus ao teu perfil, publicações,

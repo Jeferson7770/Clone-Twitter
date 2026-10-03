@@ -376,7 +376,7 @@ export const AvatarModalCloseButton = styled.button`
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--primary);
   border: none;
   color: var(--white);
   border-radius: 50%;
@@ -390,8 +390,20 @@ export const AvatarModalCloseButton = styled.button`
   z-index: 10;
   transition: background 0.2s;
 
+  svg {
+    fill: var(--primary);
+    stroke: var(--primary);
+    color: var(--primary);
+  }
+
+  svg path {
+    fill: inherit;
+    stroke: inherit;
+  }
+
   &:hover {
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--white);
+    color: var(--primary);
   }
 `;
 

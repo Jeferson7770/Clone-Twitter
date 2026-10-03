@@ -6,7 +6,9 @@ export {
   ExitToApp,
   LocationOn,
   Search,
-  Settings, 
+  Settings,
+  LightMode, // Ícone de Sol
+  DarkMode, // Ícone de Lua
 } from 'styled-icons/material-outlined';
 
 export { Person, Cake, Favorite } from 'styled-icons/material';

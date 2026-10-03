@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   Routes,
   Route,
@@ -5,6 +6,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
 
 import { useAuth } from './hooks/useAuth';
 import { AuthPage } from './pages/Auth';
@@ -18,6 +20,8 @@ import FavoritesPage from './components/FavoritesPage';
 import MessagesPage from './pages/Messages';
 import SettingsPage from './pages/Settings';
 import GlobalStyles, { LoadingContainer } from './styles/GlobalStyles';
+import { lightTheme, darkTheme } from './styles/themes';
+
 
 const FeedWrapper = () => {
   const { hashtag } = useParams();
@@ -35,17 +39,34 @@ const FeedWrapper = () => {
 export function App() {
   const { user, loading } = useAuth();
 
+  // 1. Estado do tema (Lê do localStorage para manter a preferência do utilizador)
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('twitter-theme');
+    return savedTheme ? savedTheme : 'dark';
+  });
+
+  // 2. Guarda a preferência sempre que o tema mudar
+  useEffect(() => {
+    localStorage.setItem('twitter-theme', theme);
+  }, [theme]);
+
+  // 3. Função para alternar o tema
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
+
   if (loading) {
     return (
-      <>
+      <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
         <GlobalStyles />
         <LoadingContainer>A carregar...</LoadingContainer>
-      </>
+      </ThemeProvider>
     );
   }
 
   return (
-    <>
+    // 4. Envolve a aplicação com o ThemeProvider
+    <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
       <GlobalStyles />
       <Routes>
         <Route
@@ -60,7 +81,14 @@ export function App() {
 
         <Route
           path="/"
-          element={user ? <Layout /> : <Navigate to="/auth" replace />}
+          // Passamos a função toggleTheme para o Layout (ou podes passar para as Settings)
+          element={
+            user ? (
+              <Layout toggleTheme={toggleTheme} currentTheme={theme} />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
         >
           <Route index element={<Feed />} />
 
@@ -72,13 +100,18 @@ export function App() {
 
           <Route path="favorites" element={<FavoritesPage />} />
           <Route path="messages" element={<MessagesPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="settings"
+            element={
+              <SettingsPage toggleTheme={toggleTheme} currentTheme={theme} />
+            }
+          />
           <Route path="status/:id" element={<TweetPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </ThemeProvider>
   );
 }
 

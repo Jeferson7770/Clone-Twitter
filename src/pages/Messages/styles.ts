@@ -32,7 +32,9 @@ export const Header = styled.div`
   font-size: 20px;
   font-weight: 700;
   color: var(--white);
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: var(
+    --primary
+  ); /* CORRIGIDO: Acompanha o fundo do tema ativo */
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -170,7 +172,9 @@ export const ChatHeader = styled.div`
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--outline);
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: var(
+    --primary
+  ); /* CORRIGIDO: Acompanha o fundo do tema ativo */
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;

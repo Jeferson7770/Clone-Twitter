@@ -25,7 +25,12 @@ import {
   NotificationBadge,
 } from './styles';
 
-const MenuBar: React.FC = () => {
+interface MenuBarProps {
+  toggleTheme: () => void;
+  currentTheme: string;
+}
+
+const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams<{ username?: string }>();
@@ -56,7 +61,6 @@ const MenuBar: React.FC = () => {
     }
   }, []);
 
-  // Escuta o evento disparado pela SideBar para abrir o modal de notificações
   useEffect(() => {
     const handleOpenNotificationsEvent = () => {
       setIsNotificationsModalOpen(true);
@@ -252,6 +256,28 @@ const MenuBar: React.FC = () => {
         >
           <SettingsIcon />
           <span>Configurações</span>
+        </MenuButton>
+
+        {/* 
+          Botão de Tema Corrigido: 
+          A div simula a largura/altura (approx 30px) dos ícones originais do Styled Components
+          garantindo o alinhamento perfeito do texto.
+        */}
+        <MenuButton onClick={toggleTheme}>
+          <div
+            style={{
+              width: '30px',
+              height: '30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontSize: '24px' }}>
+              {currentTheme === 'light' ? '🌙' : '☀️'}
+            </span>
+          </div>
+          <span>{currentTheme === 'light' ? 'Modo Claro' : 'Modo Escuro'}</span>
         </MenuButton>
 
         <Button onClick={() => setIsTweetModalOpen(true)}>
