@@ -22,6 +22,13 @@ class Tweet(models.Model):
     content = models.TextField(max_length=280, blank=True)
     media = models.FileField(upload_to="tweets_media/", null=True, blank=True)
     media_type = models.CharField(max_length=10, null=True, blank=True)
+    quoted_tweet = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="quotes",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -74,12 +81,10 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE, related_name="comments")
     content = models.TextField(max_length=280)
-
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
     )
     likes = models.ManyToManyField(User, related_name="liked_comments", blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -93,7 +98,6 @@ class Comment(models.Model):
         return self.likes.count()
 
 
-# Retweets
 class Retweet(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="retweets")
     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE, related_name="retweets")
@@ -106,9 +110,6 @@ class Retweet(models.Model):
         return f"@{self.user.username} retweetou o tweet {self.tweet.id}"
 
 
-# -------------------------------------------------------------------
-# SISTEMA DE MENSAGENS PRIVADAS (DM)
-# -------------------------------------------------------------------
 class Message(models.Model):
     sender = models.ForeignKey(
         User, related_name="sent_messages", on_delete=models.CASCADE
@@ -129,9 +130,6 @@ class Message(models.Model):
         )
 
 
-# -------------------------------------------------------------------
-# SISTEMA DE NOTIFICAÇÕES
-# -------------------------------------------------------------------
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
         ("like", "Like"),
@@ -144,15 +142,11 @@ class Notification(models.Model):
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
     )
-    # Quem FEZ a ação (curtiu, comentou, postou, seguiu)
     actor = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="actions_created"
     )
-
     type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
-
     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE, null=True, blank=True)
-
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -163,9 +157,6 @@ class Notification(models.Model):
         return f"{self.actor} -> {self.recipient}: {self.type}"
 
 
-# -------------------------------------------------------------------
-# SISTEMA DE HASHTAGS
-# -------------------------------------------------------------------
 class Hashtag(models.Model):
     nome = models.CharField(max_length=100)
     nome_normalizado = models.CharField(max_length=100, unique=True, db_index=True)
@@ -192,10 +183,8 @@ class TweetHashtag(models.Model):
 
 
 # -------------------------------------------------------------------
-# SIGNALS (EXTRAÇÃO, PERFIL E NOTIFICAÇÕES)
+# SIGNALS
 # -------------------------------------------------------------------
-
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -236,17 +225,15 @@ def create_comment_notification(sender, instance, created, **kwargs):
 def create_post_notification(sender, instance, created, **kwargs):
     if created:
         followers = Follow.objects.filter(following=instance.author)
-
-        notifications = []
-        for follow in followers:
-            notifications.append(
-                Notification(
-                    recipient=follow.follower,
-                    actor=instance.author,
-                    type="post",
-                    tweet=instance,
-                )
+        notifications = [
+            Notification(
+                recipient=follow.follower,
+                actor=instance.author,
+                type="post",
+                tweet=instance,
             )
+            for follow in followers
+        ]
         if notifications:
             Notification.objects.bulk_create(notifications)
 
@@ -272,25 +259,15 @@ def create_follow_notification(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Tweet)
 def extrair_hashtags_do_tweet(sender, instance, created, **kwargs):
-    """
-    Sinal responsável por extrair as hashtags do conteúdo do Tweet
-    automaticamente sempre que um novo Tweet é criado.
-    """
     if not created:
         return
 
-    # Extrai todas as palavras que começam com # (suporta letras, números e acentos)
     hashtags_encontradas = set(re.findall(r'#([^\s#.,;:!?"\']+)', instance.content))
-
     for tag in hashtags_encontradas:
         nome_normalizado = tag.lower()
-
-        # Cria ou recupera a hashtag
         hashtag_obj, is_new = Hashtag.objects.get_or_create(
             nome_normalizado=nome_normalizado, defaults={"nome": f"#{tag}"}
         )
-
-        # Incrementa o uso total de forma segura para concorrência (Race Conditions)
         if not is_new:
             Hashtag.objects.filter(id=hashtag_obj.id).update(
                 quantidade_total_de_uso=F("quantidade_total_de_uso") + 1
@@ -299,5 +276,4 @@ def extrair_hashtags_do_tweet(sender, instance, created, **kwargs):
             hashtag_obj.quantidade_total_de_uso = 1
             hashtag_obj.save(update_fields=["quantidade_total_de_uso"])
 
-        # Associa a hashtag ao tweet sem duplicar
         TweetHashtag.objects.get_or_create(hashtag=hashtag_obj, tweet=instance)

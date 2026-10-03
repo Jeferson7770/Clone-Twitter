@@ -9,24 +9,35 @@ import {
   ExitToApp,
   Twitter,
   Settings,
-  LightMode, // Novo ícone importado
-  DarkMode, // Novo ícone importado
+  LightMode,
+  DarkMode,
 } from '../../styles/Icons';
 
 export const Container = styled.div`
-  display: none;
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 99;
+  background: var(--primary);
+  border-top: 1px solid var(--outline);
+  width: 100%;
+  padding: 8px 0;
+  justify-content: space-around;
+  align-items: center;
 
   @media (min-width: 500px) {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-
     position: sticky;
     top: 0;
     left: 0;
+    z-index: initial;
+    width: auto;
+    background: transparent;
+    border-top: none;
 
     padding: 9px 19px 20px;
-
+    flex-direction: column;
+    justify-content: space-between;
     max-height: 100vh;
     overflow-y: auto;
   }
@@ -34,77 +45,80 @@ export const Container = styled.div`
 
 export const Topside = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-around;
   align-items: center;
+  width: 100%;
 
-  @media (min-width: 1280px) {
-    align-items: flex-start;
+  @media (min-width: 500px) {
+    flex-direction: column;
+    align-items: center;
+    width: auto;
+
+    @media (min-width: 1280px) {
+      align-items: flex-start;
+    }
   }
 `;
 
 export const Logo = styled(Twitter)`
-  width: 41px;
-  height: 41px;
+  display: none;
 
-  > path {
-    fill: var(--twitter);
+  @media (min-width: 500px) {
+    display: block;
+    width: 41px;
+    height: 41px;
+    margin-bottom: 20px;
+
+    > path {
+      fill: var(--twitter);
+    }
   }
-
-  margin-bottom: 20px;
 `;
 
 export const MenuButton = styled.button`
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--white);
+  padding: 8px;
+  outline: 0;
+  cursor: pointer;
+  border-radius: 25px;
+  transition: background 0.2s;
 
   > span {
     display: none;
   }
 
+  &.mobile-hide {
+    display: none;
+
+    @media (min-width: 500px) {
+      display: flex;
+    }
+  }
+
+  & + button {
+    margin-top: 0;
+
+    @media (min-width: 500px) {
+      margin-top: 16.5px;
+    }
+  }
+
   @media (min-width: 1280px) {
+    padding-right: 15px;
+
     > span {
       display: inline;
       margin-left: 19px;
       font-size: 19px;
     }
-
-    padding-right: 15px;
   }
-
-  padding: 8.25px 0;
-  outline: 0;
-
-  & + button {
-    margin-top: 16.5px;
-  }
-
-  & + button:last-child {
-    margin-top: 33px;
-
-    width: 40px;
-    height: 40px;
-
-    > span {
-      display: none;
-    }
-
-    @media (min-width: 1280px) {
-      width: 100%;
-      height: unset;
-
-      > span {
-        display: inline;
-      }
-    }
-  }
-
-  cursor: pointer;
-  border-radius: 25px;
-  transition: background 0.2s;
 
   &:hover {
     background: var(--twitter-dark-hover);
@@ -129,7 +143,6 @@ export const MenuButton = styled.button`
 
 const iconCSS = css`
   flex-shrink: 0;
-
   width: 30px;
   height: 30px;
   color: var(--white);
@@ -153,8 +166,6 @@ export const ProfileIcon = styled(Person)`
 export const SettingsIcon = styled(Settings)`
   ${iconCSS}
 `;
-
-// Novos ícones de tema adicionados aqui
 export const ThemeLightIcon = styled(LightMode)`
   ${iconCSS}
 `;
@@ -162,19 +173,109 @@ export const ThemeDarkIcon = styled(DarkMode)`
   ${iconCSS}
 `;
 
-export const Botside = styled.div`
-  margin-top: 20px;
+export const ThemeIconWrapper = styled.div`
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 24px;
 `;
 
-export const Avatar = styled.div`
+export const TweetButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  bottom: 65px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--twitter);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+  outline: 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  > span {
+    display: none;
+  }
+
+  @media (min-width: 500px) {
+    position: static;
+    margin-top: 24px;
+    width: 50px;
+    height: 50px;
+    box-shadow: none;
+    z-index: initial;
+  }
+
+  @media (min-width: 1280px) {
+    width: 100%;
+    height: 52px;
+    border-radius: 9999px;
+    padding: 0 16px;
+
+    > span {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      font-size: 17px;
+      font-weight: bold;
+      color: var(--white);
+    }
+  }
+`;
+
+export const TweetIcon = styled.svg`
+  width: 24px;
+  height: 24px;
+  fill: var(--white);
+
+  @media (min-width: 1280px) {
+    display: none;
+  }
+`;
+
+export const Botside = styled.div`
+  display: none;
+  cursor: pointer;
+
+  @media (min-width: 500px) {
+    display: flex;
+    margin-top: 20px;
+    align-items: center;
+  }
+`;
+
+export const Avatar = styled.div<{ $avatarUrl?: string }>`
   width: 39px;
   height: 39px;
-
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--gray);
+  background-color: var(--gray);
+
+  ${(props) =>
+    props.$avatarUrl &&
+    css`
+      background-image: url(${props.$avatarUrl});
+      background-size: cover;
+      background-position: center;
+    `}
 `;
 
 export const ProfileData = styled.div`
@@ -183,7 +284,6 @@ export const ProfileData = styled.div`
   @media (min-width: 1280px) {
     display: flex;
     flex-direction: column;
-
     margin-left: 10px;
     font-size: 14px;
 

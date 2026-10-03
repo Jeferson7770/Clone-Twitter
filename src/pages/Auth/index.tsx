@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, type ChangeEvent } from 'react';
 import axios from 'axios';
-import { api } from '../../services/api'; // <-- Importação adicionada
+import { api } from '../../services/api'; 
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Container,

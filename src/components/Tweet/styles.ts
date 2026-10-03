@@ -91,14 +91,26 @@ export const Dot = styled.div`
 export const DeleteButton = styled.button`
   background: transparent;
   border: none;
+  outline: none;
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  transition: background 0.2s;
+  color: var(--gray);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 
   &:hover {
-    background: rgba(255, 0, 0, 0.1);
+    background-color: rgba(244, 33, 46, 0.1);
+    color: #f4212e;
+  }
+
+  svg {
+    fill: currentColor;
   }
 `;
 
@@ -171,7 +183,8 @@ export const ExpandedImage = styled.img`
 export const Icons = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 32px;
   width: 100%;
   margin-top: 11px;
   padding-right: 16px;
@@ -230,7 +243,6 @@ export const LikeIcon = styled(Favorite)<{ $isLiked?: boolean }>`
   fill: ${(props) => (props.$isLiked ? 'var(--like)' : 'currentColor')};
 `;
 
-
 export const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -264,7 +276,8 @@ export const LikesModalHeader = styled.div`
   border-bottom: 1px solid var(--outline);
 
   h3 {
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: bold;
     color: var(--white);
   }
 
@@ -274,6 +287,17 @@ export const LikesModalHeader = styled.div`
     color: var(--white);
     font-size: 18px;
     cursor: pointer;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
   }
 `;
 
@@ -312,7 +336,9 @@ export const CommentForm = styled.form`
     outline: none;
     resize: none;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 18px;
+    line-height: 24px;
+    padding: 8px 0;
 
     &::placeholder {
       color: var(--gray);
@@ -331,15 +357,15 @@ export const CommentActions = styled.div`
     background: var(--twitter);
     color: var(--white);
     border: none;
-    padding: 6px 16px;
+    padding: 8px 18px;
     border-radius: 999px;
     font-weight: bold;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     transition: background 0.2s;
 
     &:hover {
-      background: var(--twitter-dark-hover);
+      background: var(--twitter-light-hover);
     }
 
     &:disabled {
@@ -405,28 +431,34 @@ export const CommentContentContainer = styled.div`
     gap: 4px;
 
     strong {
-      font-size: 14px;
+      font-size: 15px;
       color: var(--white);
+
+      &:hover {
+        text-decoration: underline;
+        cursor: pointer;
+      }
     }
 
     span {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--gray);
     }
   }
 
   > p {
-    font-size: 14px;
-    margin-top: 4px;
+    font-size: 15px;
+    margin-top: 2px;
     word-break: break-word;
     color: var(--white);
+    line-height: 20px;
   }
 `;
 
 export const CommentItemActions = styled.div`
   display: flex;
   gap: 16px;
-  margin-top: 8px;
+  margin-top: 10px;
   color: var(--gray);
   font-size: 13px;
 `;
@@ -435,12 +467,13 @@ export const ActionWrapper = styled.span<{ $isLiked?: boolean }>`
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   color: ${(props) => (props.$isLiked ? 'var(--like)' : 'inherit')};
   transition: color 0.2s;
 
   &:hover {
-    color: var(--like);
+    color: ${(props) =>
+      props.$isLiked ? 'var(--danger-hover)' : 'var(--twitter)'};
   }
 `;
 
@@ -475,7 +508,7 @@ export const LoadMoreButton = styled.button`
   font-weight: bold;
   width: 100%;
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
 
   &:hover {
     text-decoration: underline;
@@ -486,7 +519,7 @@ export const ReplyIndicator = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-size: 14px;
   color: var(--gray);
 
@@ -504,11 +537,10 @@ export const ReplyIndicator = styled.div`
       color 0.2s;
 
     &:hover {
-      background: rgba(51, 161, 242, 0.1);
+      background: rgba(29, 155, 240, 0.1);
     }
   }
 `;
-
 
 export const LikesList = styled.div`
   display: flex;
@@ -547,9 +579,9 @@ export const LikeUserItem = styled.div`
       border: 1px solid var(--outline);
 
       &:hover {
-        border-color: var(--twitter);
+        border-color: var(--danger);
         color: var(--white);
-        background: var(--twitter);
+        background: var(--danger);
       }
     }
   }
@@ -596,4 +628,203 @@ export const LikesModalEmpty = styled.p`
   padding: 16px;
   color: var(--gray);
   text-align: center;
+`;
+
+/* =====================================================================
+   RETWEET DROPDOWN E PREVIEW DA POSTAGEM ORIGINAL
+======================================================================== */
+
+export const RetweetWrapper = styled.div`
+  position: relative;
+`;
+
+export const RetweetDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.08);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: max-content;
+  margin-top: 8px;
+`;
+
+export const DropdownItem = styled.button`
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--white);
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.2s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+`;
+
+export const QuotePreview = styled.div`
+  border: 1px solid var(--outline);
+  border-radius: 16px;
+  padding: 14px;
+  margin: 16px 0;
+  background-color: rgba(255, 255, 255, 0.02);
+
+  strong {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--white);
+
+    span {
+      font-weight: normal;
+      color: var(--gray);
+    }
+  }
+
+  p {
+    margin-top: 6px;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--white);
+    word-break: break-word;
+  }
+`;
+
+/* =====================================================================
+   MODAL DE EXCLUSÃO (DELETE TWEET)
+======================================================================== */
+
+export const DeleteModalContainer = styled.div`
+  background: var(--primary);
+  width: 100%;
+  max-width: 320px;
+  border-radius: 16px;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  h3 {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+`;
+
+export const DeleteModalText = styled.p`
+  font-size: 15px;
+  color: var(--gray);
+  margin-bottom: 24px;
+  line-height: 20px;
+`;
+
+export const DeleteModalActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+
+    &.delete {
+      background: #f4212e;
+      color: var(--white);
+
+      &:hover {
+        background: #dc1e29;
+      }
+    }
+
+    &.cancel {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--outline);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+`;
+
+/* =====================================================================
+   CARD DE TWEET CITADO (QUOTED TWEET)
+======================================================================== */
+
+export const QuotedTweetCard = styled.div`
+  margin-top: 12px;
+  border: 1px solid var(--outline);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+`;
+
+export const QuotedHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  margin-bottom: 4px;
+
+  strong {
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  span {
+    color: var(--gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+export const QuotedAvatar = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gray);
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+`;
+
+export const QuotedContent = styled.p`
+  font-size: 15px;
+  color: var(--white);
+  line-height: 20px;
+  word-break: break-word;
 `;

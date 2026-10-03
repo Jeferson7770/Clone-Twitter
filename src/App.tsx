@@ -39,18 +39,15 @@ const FeedWrapper = () => {
 export function App() {
   const { user, loading } = useAuth();
 
-  // 1. Estado do tema (Lê do localStorage para manter a preferência do utilizador)
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('twitter-theme');
     return savedTheme ? savedTheme : 'dark';
   });
 
-  // 2. Guarda a preferência sempre que o tema mudar
   useEffect(() => {
     localStorage.setItem('twitter-theme', theme);
   }, [theme]);
 
-  // 3. Função para alternar o tema
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
@@ -65,7 +62,6 @@ export function App() {
   }
 
   return (
-    // 4. Envolve a aplicação com o ThemeProvider
     <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
       <GlobalStyles />
       <Routes>
@@ -81,7 +77,6 @@ export function App() {
 
         <Route
           path="/"
-          // Passamos a função toggleTheme para o Layout (ou podes passar para as Settings)
           element={
             user ? (
               <Layout toggleTheme={toggleTheme} currentTheme={theme} />

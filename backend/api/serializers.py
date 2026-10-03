@@ -1,16 +1,17 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework import serializers
+
 from .models import (
-    Profile,
-    Tweet,
-    Follow,
-    Like,
     Bookmark,
     Comment,
-    Retweet,
+    Follow,
+    Hashtag,
+    Like,
     Message,
     Notification,
-    Hashtag,
+    Profile,
+    Retweet,
+    Tweet,
     TweetHashtag,
 )
 
@@ -174,8 +175,17 @@ class CommentSerializer(serializers.ModelSerializer):
         return UserSerializer(obj.likes.all(), many=True, context=self.context).data
 
 
+class QuotedTweetSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Tweet
+        fields = ["id", "content", "created_at", "author", "media", "media_type"]
+
+
 class TweetSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
+    quoted_tweet = QuotedTweetSerializer(read_only=True)
     likes_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     retweets_count = serializers.SerializerMethodField()
@@ -186,6 +196,10 @@ class TweetSerializer(serializers.ModelSerializer):
     isRetweet = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     liked_by = serializers.SerializerMethodField()
+    unique_id = serializers.SerializerMethodField()
+    retweet_id = serializers.SerializerMethodField()
+    retweeted_by_username = serializers.SerializerMethodField()
+    retweeted_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Tweet
@@ -206,18 +220,25 @@ class TweetSerializer(serializers.ModelSerializer):
             "isRetweet",
             "comments",
             "liked_by",
+            "quoted_tweet",
+            "unique_id",
+            "retweet_id",
+            "retweeted_by_username",
+            "retweeted_by_name",
         ]
 
     def get_likes_count(self, obj):
-        return obj.likes.count()
+        return getattr(obj, "likes_count", obj.likes.count())
 
     def get_comments_count(self, obj):
-        return obj.comments.count()
+        return getattr(obj, "comments_count", obj.comments.count())
 
     def get_retweets_count(self, obj):
-        if hasattr(obj, "retweets"):
-            return obj.retweets.count()
-        return 0
+        if hasattr(obj, "retweets_count"):
+            return obj.retweets_count
+        retweets_convencionais = obj.retweets.count() if hasattr(obj, "retweets") else 0
+        quotes = Tweet.objects.filter(quoted_tweet=obj).count()
+        return retweets_convencionais + quotes
 
     def get_bookmarks_count(self, obj):
         return obj.bookmarked_by.count()
@@ -231,8 +252,15 @@ class TweetSerializer(serializers.ModelSerializer):
     def get_is_retweeted(self, obj):
         request = self.context.get("request")
         if request and request.user.is_authenticated:
-            if hasattr(obj, "retweets"):
-                return obj.retweets.filter(user=request.user).exists()
+            has_retweet = (
+                obj.retweets.filter(user=request.user).exists()
+                if hasattr(obj, "retweets")
+                else False
+            )
+            has_quote = Tweet.objects.filter(
+                author=request.user, quoted_tweet=obj
+            ).exists()
+            return has_retweet or has_quote
         return False
 
     def get_is_bookmarked(self, obj):
@@ -243,6 +271,22 @@ class TweetSerializer(serializers.ModelSerializer):
 
     def get_isRetweet(self, obj):
         return getattr(obj, "is_retweet_instance", False)
+
+    def get_unique_id(self, obj):
+        return getattr(obj, "unique_id", f"tw_{obj.id}")
+
+    def get_retweet_id(self, obj):
+        return getattr(obj, "retweet_id", None)
+
+    def get_retweeted_by_username(self, obj):
+        user = getattr(obj, "retweet_user", None)
+        return user.username if user else None
+
+    def get_retweeted_by_name(self, obj):
+        user = getattr(obj, "retweet_user", None)
+        if user:
+            return user.first_name or user.username
+        return None
 
     def get_comments(self, obj):
         top_level_comments = obj.comments.filter(parent__isnull=True)
@@ -267,9 +311,6 @@ class TweetSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# -------------------------------------------------------------------
-# SERIALIZER DE MENSAGENS PRIVADAS (DMs)
-# -------------------------------------------------------------------
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     recipient = UserSerializer(read_only=True)
@@ -290,9 +331,6 @@ class MessageSerializer(serializers.ModelSerializer):
         ]
 
 
-# -------------------------------------------------------------------
-# SERIALIZER DE NOTIFICAÇÕES
-# -------------------------------------------------------------------
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     text = serializers.SerializerMethodField()
@@ -348,9 +386,6 @@ class NotificationSerializer(serializers.ModelSerializer):
         return None
 
 
-# -------------------------------------------------------------------
-# SERIALIZER DE FAVORITOS E SALVOS
-# -------------------------------------------------------------------
 class FavoriteTweetSerializer(serializers.ModelSerializer):
     tweet = TweetSerializer(read_only=True)
     user = UserSerializer(read_only=True)
@@ -361,10 +396,6 @@ class FavoriteTweetSerializer(serializers.ModelSerializer):
 
 
 class BookmarkSerializer(serializers.ModelSerializer):
-    """
-    Serializer para a listagem dos Tweets que o usuário Salvou (Bookmarks)
-    """
-
     tweet = TweetSerializer(read_only=True)
 
     class Meta:
@@ -372,9 +403,6 @@ class BookmarkSerializer(serializers.ModelSerializer):
         fields = ["id", "tweet", "created_at"]
 
 
-# -------------------------------------------------------------------
-# SERIALIZERS DE HASHTAG
-# -------------------------------------------------------------------
 class HashtagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hashtag
@@ -382,11 +410,6 @@ class HashtagSerializer(serializers.ModelSerializer):
 
 
 class TrendingHashtagSerializer(serializers.Serializer):
-    """
-    Serializer para formatar os dados de tendências de hashtags.
-    Como os dados são gerados via agregação na View, usamos um Serializer básico.
-    """
-
     nome = serializers.CharField()
     usos_recentes = serializers.IntegerField()
     score_tendencia = serializers.FloatField()

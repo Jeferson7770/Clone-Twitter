@@ -8,13 +8,25 @@ export const Container = styled.div`
     display: flex;
     flex-direction: column;
     width: min(399px, 100%);
+
+    /* Ocupa a altura total do ecrã e fixa a barra lateral */
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+
+    /* Oculta a barra de deslocamento para um visual mais limpo */
+    scrollbar-width: none; /* Firefox */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari e Opera */
+    }
   }
 `;
 
 export const SearchWrapper = styled.div`
   padding: 10px 24px;
   width: min(399px, 100%);
-  position: relative;
+  position: sticky; /* Mantém a pesquisa fixa no topo da barra lateral */
   top: 0;
   z-index: 2;
   background: var(--primary);

@@ -14,7 +14,6 @@ const List: React.FC<Props> = ({ title, elements }) => {
         <Title>{title}</Title>
       </Item>
 
-      {/* Envolvemos os itens neste novo contentor com barra de rolagem */}
       <ScrollableContent>
         {elements.map((element, index) => (
           <Item key={index}>{element}</Item>

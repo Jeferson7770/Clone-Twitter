@@ -7,8 +7,8 @@ export {
   LocationOn,
   Search,
   Settings,
-  LightMode, // Ícone de Sol
-  DarkMode, // Ícone de Lua
+  LightMode, 
+  DarkMode,
 } from 'styled-icons/material-outlined';
 
 export { Person, Cake, Favorite } from 'styled-icons/material';

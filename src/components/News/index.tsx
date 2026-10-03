@@ -17,7 +17,6 @@ const News: React.FC<Props> = ({ category, title, url, onClick }) => {
     }
   };
 
-  // Garante que o título exiba no máximo um '#' no início (ex: '##Lula' vira '#Lula')
   const formattedTitle = title.replace(/^#+/, '#');
 
   return (

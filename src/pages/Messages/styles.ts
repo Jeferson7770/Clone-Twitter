@@ -32,9 +32,7 @@ export const Header = styled.div`
   font-size: 20px;
   font-weight: 700;
   color: var(--white);
-  background-color: var(
-    --primary
-  ); /* CORRIGIDO: Acompanha o fundo do tema ativo */
+  background-color: var(--primary);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -172,9 +170,7 @@ export const ChatHeader = styled.div`
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--outline);
-  background-color: var(
-    --primary
-  ); /* CORRIGIDO: Acompanha o fundo do tema ativo */
+  background-color: var(--primary);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -229,6 +225,11 @@ export const MessagesList = styled.div`
     background-color: var(--outline);
     border-radius: 3px;
   }
+
+  /* NOVO: Garante espaço para rolar a tela até a última mensagem no celular */
+  @media (max-width: 768px) {
+    padding-bottom: 130px;
+  }
 `;
 
 export const MessageRow = styled.div<{ $isMine?: boolean }>`
@@ -278,6 +279,16 @@ export const InputArea = styled.form`
   padding: 12px 16px;
   border-top: 1px solid var(--outline);
   background-color: var(--primary);
+  box-sizing: border-box; /* Garante que o input não ultrapasse a tela */
+
+  /* NOVO: Fixa o input na tela, logo acima do menu inferior no celular */
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 50px; /* Ajuste este valor se o seu menu inferior for mais grosso/fino */
+    left: 0;
+    width: 100%;
+    z-index: 98;
+  }
 `;
 
 export const MessageInput = styled.input`

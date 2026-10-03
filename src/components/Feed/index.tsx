@@ -36,16 +36,14 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
         }
 
         if (hashtag) {
-          // Remove o # e força minúsculas para coincidir com a URL do Django
           const cleanHashtag = hashtag.replace(/^#/, '').toLowerCase();
 
-          // Aponta para a view especializada "HashtagTweetsView" do seu views.py
           endpoint = `/hashtags/${cleanHashtag}/tweets/`;
         }
 
         if (sortBy === 'popular') {
           if (hashtag) {
-            params.append('sort', 'relevant'); // Usa o cálculo de relevância da sua HashtagTweetsView
+            params.append('sort', 'relevant'); 
           } else {
             params.append('ordering', '-likes_count,-retweets_count');
           }
@@ -59,12 +57,10 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
           signal: controller.signal,
         });
 
-        // A sua HashtagTweetsView usa TweetCursorPagination, logo os dados vêm dentro de "results"
         const fetchedTweets: ITweetData[] = response.data.results
           ? response.data.results
           : response.data;
 
-        // Remove os tweets duplicados baseando-se no ID (Resolve o erro das chaves duplicadas no React)
         const uniqueTweets = Array.from(
           new Map(fetchedTweets.map((tweet) => [tweet.id, tweet])).values()
         );

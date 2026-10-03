@@ -19,13 +19,11 @@ import {
   CancelButton,
 } from './styles';
 
-// 1. Definir a interface para as props que vêm do App.js
 interface SettingsProps {
   toggleTheme?: () => void;
   currentTheme?: string;
 }
 
-// 2. Receber as props no componente
 const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -61,7 +59,6 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
       </Header>
 
       <Content>
-        {/* Nova secção de Aparência */}
         {toggleTheme && currentTheme && (
           <div style={{ marginBottom: '40px' }}>
             <Title>Aparência</Title>

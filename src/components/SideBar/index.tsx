@@ -232,7 +232,7 @@ const SideBar: React.FC = () => {
                 )
               }
             >
-              🔔 Tens {unreadCount} nova{unreadCount > 1 ? 's' : ''} notificação
+              🔔 Tens {unreadCount} nova{unreadCount > 1 ? 's' : ''} notificaç
               {unreadCount > 1 ? 'ões' : 'ão'}!
             </NotificationAlert>
           )}

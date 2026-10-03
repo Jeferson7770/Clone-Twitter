@@ -1,14 +1,10 @@
 import copy
 import re
-from datetime import timedelta
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
-from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db.models import Count, ExpressionWrapper, F, FloatField, Q
-from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status, viewsets
@@ -19,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import (
+    Bookmark,
     Comment,
     Follow,
     Hashtag,
@@ -31,11 +28,14 @@ from .models import (
     TweetHashtag,
 )
 from .serializers import (
+    BookmarkSerializer,
     CommentSerializer,
+    FavoriteTweetSerializer,
     HashtagSerializer,
     MessageSerializer,
     NotificationSerializer,
     ProfileSerializer,
+    QuotedTweetSerializer,
     RegisterSerializer,
     TrendingHashtagSerializer,
     TweetSerializer,
@@ -72,8 +72,6 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
         )
         if profile_serializer.is_valid():
             profile_serializer.save()
-        else:
-            print("Erros no serializer do perfil:", profile_serializer.errors)
 
         return Response(UserSerializer(user, context={"request": request}).data)
 
@@ -105,7 +103,6 @@ class PasswordResetRequestView(APIView):
             )
 
         users = User.objects.filter(email=email)
-
         if not users.exists():
             return Response(
                 {"message": "Se o e-mail existir, um link de recuperação foi enviado."},
@@ -113,7 +110,6 @@ class PasswordResetRequestView(APIView):
             )
 
         frontend_url = "http://localhost:5173/reset-password"
-
         for user in users:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -138,7 +134,6 @@ class PasswordResetConfirmView(APIView):
 
     def post(self, request, uidb64, token):
         password = request.data.get("password")
-
         if not password:
             return Response(
                 {"error": "A nova senha é obrigatória."},
@@ -157,11 +152,10 @@ class PasswordResetConfirmView(APIView):
             return Response(
                 {"message": "Senha redefinida com sucesso."}, status=status.HTTP_200_OK
             )
-        else:
-            return Response(
-                {"error": "O link de recuperação é inválido ou expirou."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {"error": "O link de recuperação é inválido ou expirou."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class TweetViewSet(viewsets.ModelViewSet):
@@ -170,48 +164,18 @@ class TweetViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        return Tweet.objects.all().select_related("author", "author__profile")
+        return Tweet.objects.all().select_related(
+            "author", "author__profile", "quoted_tweet"
+        )
 
     def _compute_tweet_metrics(self, tweet_obj):
-        """Calcula de forma garantida as contagens e a pontuação de engajamento do tweet."""
-        # Curtidas
-        if hasattr(tweet_obj, "total_likes") and tweet_obj.total_likes is not None:
-            likes = tweet_obj.total_likes
-        elif hasattr(tweet_obj, "likes"):
-            likes = tweet_obj.likes.count()
-        elif hasattr(tweet_obj, "like_set"):
-            likes = tweet_obj.like_set.count()
-        else:
-            likes = Like.objects.filter(tweet_id=tweet_obj.id).count()
-
-        # Comentários
-        if (
-            hasattr(tweet_obj, "total_comments")
-            and tweet_obj.total_comments is not None
-        ):
-            comments = tweet_obj.total_comments
-        elif hasattr(tweet_obj, "comments"):
-            comments = tweet_obj.comments.count()
-        elif hasattr(tweet_obj, "comment_set"):
-            comments = tweet_obj.comment_set.count()
-        else:
-            comments = Comment.objects.filter(tweet_id=tweet_obj.id).count()
-
-        # Retweets
-        if (
-            hasattr(tweet_obj, "total_retweets")
-            and tweet_obj.total_retweets is not None
-        ):
-            retweets = tweet_obj.total_retweets
-        elif hasattr(tweet_obj, "retweets"):
-            retweets = tweet_obj.retweets.count()
-        elif hasattr(tweet_obj, "retweet_set"):
-            retweets = tweet_obj.retweet_set.count()
-        else:
-            retweets = Retweet.objects.filter(tweet_id=tweet_obj.id).count()
-
-        score = (likes * 1) + (comments * 2) + (retweets * 3)
-        return likes, comments, retweets, float(score)
+        likes = Like.objects.filter(tweet_id=tweet_obj.id).count()
+        comments = Comment.objects.filter(tweet_id=tweet_obj.id).count()
+        retweets_count = Retweet.objects.filter(tweet_id=tweet_obj.id).count()
+        quotes_count = Tweet.objects.filter(quoted_tweet_id=tweet_obj.id).count()
+        total_retweets = retweets_count + quotes_count
+        score = (likes * 1) + (comments * 2) + (total_retweets * 3)
+        return likes, comments, total_retweets, float(score)
 
     def _get_timeline_response(self, request, is_popular_override=None):
         username = request.query_params.get("username")
@@ -240,63 +204,39 @@ class TweetViewSet(viewsets.ModelViewSet):
             }
 
             for key, val in request.query_params.items():
-                k_lower = str(key).lower()
                 v_lower = str(val).lower()
-
                 if any(term in v_lower for term in popular_terms):
                     is_popular = True
                     break
 
-                if k_lower in [
-                    "tab",
-                    "tabindex",
-                    "index",
-                    "type",
-                    "filter",
-                    "sort",
-                    "sort_by",
-                    "ordering",
-                    "mode",
-                    "feed",
-                    "view",
-                ]:
-                    if (
-                        v_lower
-                        in [
-                            "1",
-                            "2",
-                            "popular",
-                            "alta",
-                            "em_alta",
-                            "em-alta",
-                            "trending",
-                            "top",
-                            "hot",
-                        ]
-                        or "-" in v_lower
-                    ):
-                        is_popular = True
-                        break
-
         if username:
             tweets_qs = Tweet.objects.filter(author__username=username).select_related(
-                "author", "author__profile"
+                "author", "author__profile", "quoted_tweet"
             )
             retweets_qs = Retweet.objects.filter(
                 user__username=username
-            ).select_related("tweet", "tweet__author", "tweet__author__profile")
+            ).select_related("tweet", "tweet__author", "tweet__author__profile", "user")
         else:
             followed_users = Follow.objects.filter(follower=request.user).values_list(
                 "following", flat=True
             )
-            feed_users = list(followed_users) + [request.user.id]
-
-            tweets_qs = Tweet.objects.filter(author__in=feed_users).select_related(
-                "author", "author__profile"
-            )
-            retweets_qs = Retweet.objects.filter(user__in=feed_users).select_related(
-                "tweet", "tweet__author", "tweet__author__profile"
-            )
+            if followed_users.exists():
+                feed_users = list(followed_users) + [request.user.id]
+                tweets_qs = Tweet.objects.filter(author__in=feed_users).select_related(
+                    "author", "author__profile", "quoted_tweet"
+                )
+                retweets_qs = Retweet.objects.filter(
+                    user__in=feed_users
+                ).select_related(
+                    "tweet", "tweet__author", "tweet__author__profile", "user"
+                )
+            else:
+                tweets_qs = Tweet.objects.all().select_related(
+                    "author", "author__profile", "quoted_tweet"
+                )
+                retweets_qs = Retweet.objects.all().select_related(
+                    "tweet", "tweet__author", "tweet__author__profile", "user"
+                )
 
         timeline = []
 
@@ -307,6 +247,8 @@ class TweetViewSet(viewsets.ModelViewSet):
             tweet.retweets_count = r
             tweet.score = score
             tweet.sort_date = tweet.created_at
+            tweet.is_retweet_instance = False
+            tweet.unique_id = f"tw_{tweet.id}"
             timeline.append(tweet)
 
         for rt in retweets_qs:
@@ -314,6 +256,9 @@ class TweetViewSet(viewsets.ModelViewSet):
                 t_copy = copy.copy(rt.tweet)
                 l, c, r, score = self._compute_tweet_metrics(t_copy)
                 t_copy.is_retweet_instance = True
+                t_copy.retweet_user = rt.user
+                t_copy.retweet_id = rt.id
+                t_copy.unique_id = f"rt_{rt.id}"
                 t_copy.likes_count = l
                 t_copy.comments_count = c
                 t_copy.retweets_count = r
@@ -322,7 +267,6 @@ class TweetViewSet(viewsets.ModelViewSet):
                 timeline.append(t_copy)
 
         if is_popular:
-            # Ordena por pontuação de engajamento (decrescente) e depois por data
             timeline.sort(
                 key=lambda x: (
                     getattr(x, "score", 0.0),
@@ -331,7 +275,6 @@ class TweetViewSet(viewsets.ModelViewSet):
                 reverse=True,
             )
         else:
-            # Ordena por data mais recente
             timeline.sort(
                 key=lambda x: getattr(x, "sort_date", x.created_at),
                 reverse=True,
@@ -340,25 +283,7 @@ class TweetViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(
             timeline, many=True, context={"request": request}
         )
-        data = serializer.data
-
-        # Anexa todas as contagens e scores diretamente em cada item do JSON retornado
-        for item, tweet_obj in zip(data, timeline):
-            l = getattr(tweet_obj, "likes_count", 0)
-            c = getattr(tweet_obj, "comments_count", 0)
-            r = getattr(tweet_obj, "retweets_count", 0)
-            s = getattr(tweet_obj, "score", 0.0)
-
-            item["likes_count"] = l
-            item["comments_count"] = c
-            item["retweets_count"] = r
-            item["total_likes"] = l
-            item["total_comments"] = c
-            item["total_retweets"] = r
-            item["score"] = s
-            item["engagement_score"] = s
-
-        return Response(data)
+        return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         return self._get_timeline_response(request)
@@ -382,7 +307,7 @@ class TweetViewSet(viewsets.ModelViewSet):
         for tag_name in hashtags:
             tag_normalizado = tag_name.lower()
             hashtag_obj, _ = Hashtag.objects.get_or_create(
-                nome_normalizado=tag_normalizado, defaults={"nome": tag_name}
+                nome_normalizado=tag_normalizado, defaults={"nome": f"#{tag_name}"}
             )
             TweetHashtag.objects.get_or_create(tweet=tweet, hashtag=hashtag_obj)
 
@@ -454,6 +379,43 @@ class TweetViewSet(viewsets.ModelViewSet):
             return Response({"status": "unretweeted"}, status=status.HTTP_200_OK)
         return Response({"status": "retweeted"}, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=["get"])
+    def retweeted_by(self, request, pk=None):
+        tweet = self.get_object()
+        retweets = Retweet.objects.filter(tweet=tweet).select_related(
+            "user", "user__profile"
+        )
+        users = [rt.user for rt in retweets]
+        serializer = UserSerializer(users, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def quote(self, request, pk=None):
+        original_tweet = self.get_object()
+        content = request.data.get("content", "")
+
+        if not content:
+            return Response(
+                {"error": "Conteúdo é obrigatório"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        quoted_tweet = Tweet.objects.create(
+            author=request.user,
+            content=content,
+            quoted_tweet=original_tweet,
+        )
+
+        serializer = self.get_serializer(quoted_tweet, context={"request": request})
+        data = serializer.data
+
+        if "quoted_tweet" not in data or not isinstance(data["quoted_tweet"], dict):
+            original_serializer = QuotedTweetSerializer(
+                original_tweet, context={"request": request}
+            )
+            data["quoted_tweet"] = original_serializer.data
+
+        return Response(data, status=status.HTTP_201_CREATED)
+
     @action(detail=False, methods=["get"], url_path="unread_count")
     def unread_count(self, request):
         return Response(
@@ -476,7 +438,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def like(self, request, pk=None):
         comment = self.get_object()
-
         if request.user in comment.likes.all():
             comment.likes.remove(request.user)
             return Response({"status": "unliked"}, status=status.HTTP_200_OK)
@@ -542,11 +503,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["get"], url_path="favorites")
     def favorites(self, request, username=None):
         target_user = self.get_object()
-
         liked_tweets = Tweet.objects.filter(likes__user=target_user).order_by(
             "-likes__created_at"
         )
-
         serializer = TweetSerializer(
             liked_tweets, many=True, context={"request": request}
         )
@@ -712,11 +671,6 @@ class MessageViewSet(viewsets.ModelViewSet):
     def unread_count(self, request):
         count = Message.objects.filter(recipient=request.user, is_read=False).count()
         return Response({"unread_count": count})
-
-
-# -------------------------------------------------------------------
-# HASHTAGS
-# -------------------------------------------------------------------
 
 
 class HashtagDetailView(generics.RetrieveAPIView):

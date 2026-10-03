@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 
-/* Contentor individual de cada notícia/item */
 export const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -23,10 +22,8 @@ export const Container = styled.div`
     font-size: 14px;
     line-height: 18px;
 
-    /* CORREÇÃO: Usar a variável dinâmica em vez do branco fixo */
     color: var(--white);
 
-    /* Limita o texto em até 2 linhas e adiciona '...' se for maior */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -35,16 +32,13 @@ export const Container = styled.div`
   }
 `;
 
-/* Contentor que envolve toda a lista no componente pai para gerar a barra de rolagem */
 export const NewsListContainer = styled.div`
   display: flex;
   flex-direction: column;
 
-  /* Altura máxima para não estourar o layout vertical */
   max-height: 400px;
   overflow-y: auto;
 
-  /* Estilização da barra de rolagem discreta */
   scrollbar-width: thin;
   scrollbar-color: var(--gray, #5b7083) transparent;
 

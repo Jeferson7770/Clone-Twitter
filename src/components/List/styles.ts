@@ -33,14 +33,11 @@ export const ScrollableContent = styled.div`
   flex-direction: column;
   border-top: 1px solid var(--outline);
 
-  /* Altura ajustada para exibir exatamente até 3 itens com rolagem */
   max-height: 210px;
   overflow-y: auto;
 
-  /* Esconde a barra de rolagem no Firefox */
   scrollbar-width: none;
 
-  /* Esconde a barra de rolagem no Chrome, Safari e Edge */
   &::-webkit-scrollbar {
     display: none;
   }

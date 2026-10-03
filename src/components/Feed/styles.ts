@@ -4,27 +4,25 @@ export const Container = styled.div`
   display: flex;
   flex-direction: column;
 
-  /* Habilita a rolagem interna exclusiva para a coluna central */
   height: 100vh;
   overflow-y: auto;
 
-  /* Oculta visualmente a barra de rolagem (design limpo como o Twitter original) */
-  scrollbar-width: none; /* Funciona no Firefox */
+  scrollbar-width: none; 
   &::-webkit-scrollbar {
-    display: none; /* Funciona no Chrome, Safari, Edge */
+    display: none; 
   }
 `;
 
 export const HeaderContainer = styled.div`
   display: flex;
   flex-direction: column;
-  position: sticky; /* Prende o cabeçalho no topo da rolagem */
+  position: sticky; 
   top: 0;
   z-index: 2;
   background: var(
     --primary,
     #000000
-  ); /* Garante que os tweets não passam por cima. Fallback preto. */
+  ); 
   border-bottom: 1px solid var(--outline);
 `;
 
@@ -51,7 +49,7 @@ export const SortToggle = styled.div`
   width: 100%;
 
   button {
-    flex: 1; /* Divide a largura em duas metades perfeitamente iguais */
+    flex: 1; 
     background: transparent;
     border: none;
     outline: none;
