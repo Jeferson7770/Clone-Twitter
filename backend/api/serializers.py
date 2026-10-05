@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from .models import (
     Bookmark,
@@ -98,6 +99,16 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     birth_date = serializers.DateField(required=False, allow_null=True)
     avatar = serializers.ImageField(required=False, allow_null=True)
+
+    # Campo adicionado para validar e-mails únicos
+    email = serializers.EmailField(
+        required=True,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(), message="Este e-mail já está em uso."
+            )
+        ],
+    )
 
     class Meta:
         model = User
