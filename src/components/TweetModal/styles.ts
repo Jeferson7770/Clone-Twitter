@@ -153,7 +153,7 @@ export const Footer = styled.div`
 export const Actions = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 `;
 
 export const UploadImageLabel = styled.label`
@@ -185,6 +185,37 @@ export const ImageIcon = styled.div`
     width: 20px;
     height: 20px;
     fill: currentColor;
+  }
+`;
+
+export const EmojiPickerPopover = styled.div`
+  position: absolute;
+  bottom: 45px;
+  left: 0;
+  background-color: var(--primary);
+  border: 1px solid var(--outline);
+  box-shadow:
+    rgba(255, 255, 255, 0.2) 0px 0px 15px,
+    rgba(255, 255, 255, 0.05) 0px 0px 3px 1px;
+  padding: 8px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  z-index: 20;
+  width: 180px;
+
+  span {
+    font-size: 20px;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgba(239, 243, 244, 0.1);
+    }
   }
 `;
 

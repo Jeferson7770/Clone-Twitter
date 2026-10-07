@@ -73,7 +73,7 @@ export const SearchIcon = styled(Search)`
 export const Body = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 57px 24px 200px;
+  padding: 15px 24px 200px;
   margin-top: 3px;
 
   > div + div {
@@ -99,17 +99,6 @@ export const HashtagItem = styled.div`
   border-bottom: 1px solid var(--outline);
   color: var(--twitter);
   font-weight: bold;
-
-  &:hover {
-    background: var(--search);
-  }
-`;
-
-export const NotificationAlert = styled.div`
-  padding: 10px 15px;
-  color: var(--twitter, #1da1f2);
-  font-weight: bold;
-  cursor: pointer;
 
   &:hover {
     background: var(--search);

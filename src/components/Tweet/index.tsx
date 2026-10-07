@@ -57,9 +57,6 @@ import {
   RetweetDropdown,
   DropdownItem,
   QuotePreview,
-  DeleteModalContainer,
-  DeleteModalText,
-  DeleteModalActions,
   QuotedTweetCard,
   QuotedHeader,
   QuotedAvatar,
@@ -90,7 +87,7 @@ export interface ILikedUser {
   first_name?: string;
   is_following?: boolean;
   profile?: {
-    avatar?: string | null; 
+    avatar?: string | null;
   };
 }
 
@@ -128,9 +125,9 @@ interface TweetProps {
 const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
-  const [isImageOpen, setIsImageOpen] = useState(false);
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isImageOpen, setIsImageOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [likesCount, setLikesCount] = useState(tweet.likes_count || 0);
   const [isLiked, setIsLiked] = useState(tweet.is_liked || false);
@@ -153,10 +150,16 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const [loadingRetweetedBy, setLoadingRetweetedBy] = useState(false);
 
   const [commentsCount, setCommentsCount] = useState(tweet.comments_count || 0);
+  const [comments, setComments] = useState<IComment[]>(tweet.comments || []);
+
+  const [prevTweetComments, setPrevTweetComments] = useState(tweet.comments);
+  const [prevTweetCommentsCount, setPrevTweetCommentsCount] = useState(
+    tweet.comments_count
+  );
+
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [loadingComment, setLoadingComment] = useState(false);
-  const [comments, setComments] = useState<IComment[]>(tweet.comments || []);
   const [loadingCommentsList, setLoadingCommentsList] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(3);
   const [replyingTo, setReplyingTo] = useState<{
@@ -165,50 +168,99 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   } | null>(null);
 
   const isOwner = user?.username === tweet.author.username;
-  const [prevTweetComments, setPrevTweetComments] = useState(tweet.comments);
-  const [prevTweetCommentsCount, setPrevTweetCommentsCount] = useState(
-    tweet.comments_count
-  );
 
   if (tweet.comments !== prevTweetComments) {
     setPrevTweetComments(tweet.comments);
-    if (tweet.comments) setComments(tweet.comments);
+    setComments(tweet.comments || []);
   }
 
   if (tweet.comments_count !== prevTweetCommentsCount) {
     setPrevTweetCommentsCount(tweet.comments_count);
-    if (tweet.comments_count !== undefined)
-      setCommentsCount(tweet.comments_count);
+    setCommentsCount(tweet.comments_count || 0);
   }
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsDeleteModalOpen(true);
+    const userConfirmed = window.confirm(
+      'Excluir Tweet?\n\nIsso não pode ser desfeito e ele será removido do seu perfil, da timeline das contas que seguem você e dos resultados de busca.'
+    );
+
+    if (userConfirmed) {
+      confirmDelete();
+    }
+  };
+
+  const handleSuccessfulDelete = () => {
+    if (isOwner && user) {
+      const currentTweets =
+        (user as { tweets_count?: number }).tweets_count ?? 0;
+      updateUser({
+        ...user,
+        tweets_count: Math.max(0, currentTweets - 1),
+      } as typeof user & { tweets_count: number });
+    }
+    if (onDelete) onDelete(tweet.id);
   };
 
   const confirmDelete = async () => {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/tweets/${tweet.id}/`);
-      if (isOwner && user) {
-        const currentTweets =
-          (user as { tweets_count?: number }).tweets_count ?? 0;
-        updateUser({
-          ...user,
-          tweets_count: Math.max(0, currentTweets - 1),
-        } as typeof user & { tweets_count: number });
+      // Ajustado: sem a barra inicial '/'
+      await api.delete(`tweets/${tweet.id}/`);
+      handleSuccessfulDelete();
+    } catch (error: unknown) {
+      const err = error as { response?: { status: number } };
+      if (err.response && err.response.status === 404) {
+        handleSuccessfulDelete();
+      } else {
+        console.error('Erro ao deletar tweet:', error);
+        alert('Não foi possível deletar o tweet.');
       }
-      if (onDelete) onDelete(tweet.id);
-      setIsDeleteModalOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteComment = async (
+    e: React.MouseEvent,
+    commentId: number | string
+  ) => {
+    e.stopPropagation();
+    const confirmDelete = window.confirm(
+      'Excluir este comentário?\n\nIsso não pode ser desfeito.'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      // Ajustado: sem a barra inicial '/'
+      await api.delete(`comments/${commentId}/`);
+
+      const removeCommentFromTree = (commentsList: IComment[]): IComment[] => {
+        return commentsList
+          .filter((c) => c.id !== commentId)
+          .map((c) => ({
+            ...c,
+            replies: c.replies ? removeCommentFromTree(c.replies) : [],
+          }));
+      };
+
+      setComments((prev) => removeCommentFromTree(prev));
+      setCommentsCount((prev) => Math.max(0, prev - 1));
+
+      if (onUpdate) onUpdate();
     } catch (error) {
-      console.error('Erro ao deletar tweet:', error);
-      alert('Não foi possível deletar o tweet.');
+      console.error('Erro ao deletar comentário:', error);
+      alert('Não foi possível deletar o comentário.');
     }
   };
 
   const handleLikeTweet = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const response = await api.post(`/tweets/${tweet.id}/like/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.post(`tweets/${tweet.id}/like/`);
       if (response.status === 200 || response.status === 201) {
         setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
         setIsLiked(!isLiked);
@@ -225,7 +277,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     setIsLikesModalOpen(true);
     setLoadingLikedBy(true);
     try {
-      const response = await api.get(`/tweets/${tweet.id}/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.get(`tweets/${tweet.id}/`);
       if (response.data && response.data.liked_by)
         setLikedByUsers(response.data.liked_by);
     } catch (error) {
@@ -244,7 +297,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     setIsLikesModalOpen(true);
     setLoadingLikedBy(true);
     try {
-      const response = await api.get(`/comments/${commentId}/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.get(`comments/${commentId}/`);
       if (response.data && response.data.liked_by)
         setLikedByUsers(response.data.liked_by);
     } catch (error) {
@@ -260,7 +314,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   ) => {
     e.stopPropagation();
     try {
-      const response = await api.post(`/users/${targetUser.username}/follow/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.post(`users/${targetUser.username}/follow/`);
       if (response.status === 200 || response.status === 201) {
         setLikedByUsers((prev) =>
           prev.map((u) =>
@@ -288,7 +343,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     e.stopPropagation();
     setShowRetweetMenu(false);
     try {
-      const response = await api.post(`/tweets/${tweet.id}/retweet/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.post(`tweets/${tweet.id}/retweet/`);
       if (response.status === 200 || response.status === 201) {
         setRetweetsCount((prev) => (isRetweeted ? prev - 1 : prev + 1));
         setIsRetweeted(!isRetweeted);
@@ -310,14 +366,14 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     if (!quoteText.trim()) return;
     setLoadingQuote(true);
     try {
-      await api.post(`/tweets/${tweet.id}/quote/`, {
+      // Ajustado: sem a barra inicial '/'
+      await api.post(`tweets/${tweet.id}/quote/`, {
         content: quoteText.trim(),
       });
 
       setRetweetsCount((prev) => prev + 1);
       setIsRetweeted(true);
 
-      // Adiciona o usuário logado na lista local de quem retuitou (Atualização Otimista)
       if (user) {
         setRetweetedByUsers((prev) => {
           const exists = prev.some((u) => u.username === user.username);
@@ -350,7 +406,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     setIsRetweetsModalOpen(true);
     setLoadingRetweetedBy(true);
     try {
-      const response = await api.get(`/tweets/${tweet.id}/retweeted_by/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.get(`tweets/${tweet.id}/retweeted_by/`);
       if (response.data) {
         setRetweetedByUsers(response.data);
       }
@@ -364,7 +421,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const fetchComments = async () => {
     setLoadingCommentsList(true);
     try {
-      const response = await api.get(`/tweets/${tweet.id}/`);
+      // Ajustado: sem a barra inicial '/'
+      const response = await api.get(`tweets/${tweet.id}/`);
       if (response.data && response.data.comments)
         setComments(response.data.comments);
     } catch (error) {
@@ -386,7 +444,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     if (!commentText.trim()) return;
     setLoadingComment(true);
     try {
-      await api.post(`/tweets/${tweet.id}/comment/`, {
+      // Ajustado: sem a barra inicial '/'
+      await api.post(`tweets/${tweet.id}/comment/`, {
         content: commentText.trim(),
         parent: replyingTo?.id || null,
       });
@@ -432,7 +491,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     e.stopPropagation();
     setComments((prev) => toggleLikeInTree(prev, commentId));
     try {
-      await api.post(`/comments/${commentId}/like/`);
+      // Ajustado: sem a barra inicial '/'
+      await api.post(`comments/${commentId}/like/`);
     } catch (error) {
       console.error('Erro ao curtir comentário:', error);
     }
@@ -453,19 +513,19 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     month: 'short',
   });
 
-const getAvatarUrl = (avatarPath?: string | null) => {
-  if (!avatarPath) return 'none';
+  const getAvatarUrl = (avatarPath?: string | null) => {
+    if (!avatarPath) return 'none';
 
-  let baseURL = 'http://localhost:8000';
-  const meta = import.meta as unknown as { env: Record<string, string> };
-  if (typeof import.meta !== 'undefined' && meta.env) {
-    baseURL = meta.env.VITE_API_URL || baseURL;
-  }
+    let baseURL = 'http://localhost:8000';
+    const meta = import.meta as unknown as { env: Record<string, string> };
+    if (typeof import.meta !== 'undefined' && meta.env) {
+      baseURL = meta.env.VITE_API_URL || baseURL;
+    }
 
-  return avatarPath.startsWith('http')
-    ? `url(${avatarPath})`
-    : `url(${baseURL}${avatarPath})`;
-};
+    return avatarPath.startsWith('http')
+      ? `url(${avatarPath})`
+      : `url(${baseURL}${avatarPath})`;
+  };
 
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
     return commentList.map((comment, index) => (
@@ -497,6 +557,7 @@ const getAvatarUrl = (avatarPath?: string | null) => {
                 <CommentIcon />
                 <span>{comment.replies_count || 0}</span>
               </ActionWrapper>
+
               <ActionWrapper
                 onClick={(e) => handleLikeComment(e, comment.id)}
                 $isLiked={comment.is_liked}
@@ -509,6 +570,15 @@ const getAvatarUrl = (avatarPath?: string | null) => {
                   {comment.likes_count || 0}
                 </LikeCountSpan>
               </ActionWrapper>
+
+              {user?.username === comment.author.username && (
+                <ActionWrapper
+                  onClick={(e) => handleDeleteComment(e, comment.id)}
+                  title="Deletar Comentário"
+                >
+                  <span style={{ fontSize: '14px' }}>🗑️</span>
+                </ActionWrapper>
+              )}
             </CommentItemActions>
           </CommentContentContainer>
         </CommentItem>
@@ -560,8 +630,12 @@ const getAvatarUrl = (avatarPath?: string | null) => {
             </HeaderInfo>
 
             {isOwner && (
-              <DeleteButton onClick={handleDeleteClick} title="Deletar tweet">
-                🗑️
+              <DeleteButton
+                onClick={handleDeleteClick}
+                title="Deletar tweet"
+                disabled={isDeleting}
+              >
+                {isDeleting ? '⏳' : '🗑️'}
               </DeleteButton>
             )}
           </Header>
@@ -769,34 +843,6 @@ const getAvatarUrl = (avatarPath?: string | null) => {
             </CommentForm>
           </CommentFormArea>
         </div>
-      )}
-
-      {isDeleteModalOpen && (
-        <ModalOverlay
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDeleteModalOpen(false);
-          }}
-        >
-          <DeleteModalContainer onClick={(e) => e.stopPropagation()}>
-            <h3>Excluir Tweet?</h3>
-            <DeleteModalText>
-              Isso não pode ser desfeito e ele será removido do seu perfil, da
-              timeline das contas que seguem você e dos resultados de busca.
-            </DeleteModalText>
-            <DeleteModalActions>
-              <button className="delete" onClick={confirmDelete}>
-                Excluir
-              </button>
-              <button
-                className="cancel"
-                onClick={() => setIsDeleteModalOpen(false)}
-              >
-                Cancelar
-              </button>
-            </DeleteModalActions>
-          </DeleteModalContainer>
-        </ModalOverlay>
       )}
 
       {/* MODAL DE QUOTE TWEET */}

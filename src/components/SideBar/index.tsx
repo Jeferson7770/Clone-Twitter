@@ -16,7 +16,6 @@ import {
   Body,
   HashtagDropdown,
   HashtagItem,
-  NotificationAlert,
   StatusMessage,
 } from './styles';
 
@@ -52,7 +51,6 @@ const SideBar: React.FC = () => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const [suggestions, setSuggestions] = useState<IUserSuggestion[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [hashtagResults, setHashtagResults] = useState<{ nome: string }[]>([]);
@@ -142,20 +140,6 @@ const SideBar: React.FC = () => {
       .catch((error) => {
         console.error('Erro ao carregar sugestões:', error);
       });
-
-    const fetchUnreadNotifications = async () => {
-      try {
-        const response = await api.get('/notifications/unread_count/');
-        setUnreadCount(response.data.unread_count);
-      } catch (error) {
-        console.error('Erro ao buscar notificações:', error);
-      }
-    };
-
-    fetchUnreadNotifications();
-    const intervalId = setInterval(fetchUnreadNotifications, 10000);
-
-    return () => clearInterval(intervalId);
   }, [user]);
 
   const handleFollowChange = (delta: number) => {
@@ -224,19 +208,6 @@ const SideBar: React.FC = () => {
 
       <StickyBox offsetTop={20} offsetBottom={20}>
         <Body>
-          {unreadCount > 0 && (
-            <NotificationAlert
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent('open-notifications-modal')
-                )
-              }
-            >
-              🔔 Tens {unreadCount} nova{unreadCount > 1 ? 's' : ''} notificaç
-              {unreadCount > 1 ? 'ões' : 'ão'}!
-            </NotificationAlert>
-          )}
-
           <List
             title="Talvez você curta"
             elements={

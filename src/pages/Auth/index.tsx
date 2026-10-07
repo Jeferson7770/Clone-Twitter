@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, type ChangeEvent } from 'react';
 import axios from 'axios';
-import { api } from '../../services/api'; 
+import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Container,
@@ -57,7 +57,8 @@ export const AuthPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!firstName || !username || !password) {
+    // Validação de campos obrigatórios incluindo a data de nascimento
+    if (!firstName || !username || !password || !birthDate) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
@@ -87,6 +88,37 @@ export const AuthPage: React.FC = () => {
         return;
       }
     }
+
+    // --- CÁLCULO E VALIDAÇÃO DE IDADE ---
+    const today = new Date();
+    const birthDateObj = new Date(birthDate);
+
+    // Ajuste de fuso horário para garantir que o dia seja calculado corretamente
+    const userTimezoneOffset = birthDateObj.getTimezoneOffset() * 60000;
+    const adjustedBirthDate = new Date(
+      birthDateObj.getTime() + userTimezoneOffset
+    );
+
+    let age = today.getFullYear() - adjustedBirthDate.getFullYear();
+    const monthDiff = today.getMonth() - adjustedBirthDate.getMonth();
+
+    // Ajusta a idade se o mês atual for anterior ao do aniversário,
+    // ou se estiver no mesmo mês mas o dia atual for anterior ao do aniversário
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < adjustedBirthDate.getDate())
+    ) {
+      age--;
+    }
+
+    // Regra: Bloqueia menores de 16 anos
+    if (age < 16) {
+      setError(
+        'Menores de 16 anos precisam ter a conta vinculada e autorizada por um responsável legal com controle parental.'
+      );
+      return;
+    }
+    // ------------------------------------
 
     setStep(2);
   };
@@ -371,6 +403,7 @@ export const AuthPage: React.FC = () => {
                   <input
                     id="birth"
                     type="date"
+                    required
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
                   />

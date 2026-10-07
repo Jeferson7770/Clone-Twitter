@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ChangeEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -24,9 +25,9 @@ import {
   Footer,
   Actions,
   UploadImageLabel,
-  ImageIcon,
   TweetButton,
   CharCounter,
+  EmojiPickerPopover,
 } from './styles';
 
 interface TweetModalProps {
@@ -34,6 +35,21 @@ interface TweetModalProps {
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+const EMOJI_LIST = [
+  '😊',
+  '😂',
+  '🔥',
+  '🚀',
+  '❤️',
+  '👍',
+  '🎉',
+  '💡',
+  '😎',
+  '✨',
+  '👏',
+  '🙌',
+];
 
 export const TweetModal: React.FC<TweetModalProps> = ({
   isOpen,
@@ -46,6 +62,9 @@ export const TweetModal: React.FC<TweetModalProps> = ({
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRemoveMedia = useCallback(() => {
     setMediaFile(null);
@@ -59,6 +78,7 @@ export const TweetModal: React.FC<TweetModalProps> = ({
   const handleClose = useCallback(() => {
     setContent('');
     handleRemoveMedia();
+    setShowEmojiPicker(false);
     onClose();
   }, [handleRemoveMedia, onClose]);
 
@@ -88,6 +108,11 @@ export const TweetModal: React.FC<TweetModalProps> = ({
       const previewUrl = URL.createObjectURL(file);
       setMediaPreview(previewUrl);
     }
+  };
+
+  const handleAddEmoji = (emoji: string) => {
+    setContent((prev) => prev + emoji);
+    setShowEmojiPicker(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,11 +190,30 @@ export const TweetModal: React.FC<TweetModalProps> = ({
             )}
 
             <Footer>
-              <Actions>
-                <UploadImageLabel title="Adicionar foto ou vídeo">
-                  <ImageIcon>📷</ImageIcon>
+              <Actions
+                style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
+              >
+                <UploadImageLabel
+                  title="Adicionar foto ou vídeo"
+                  style={{
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    style={{ fill: 'currentColor' }}
+                  >
+                    <title>Adicionar imagem</title>
+                    <path d="M3 5.5C3 4.119 4.119 3 5.5 3h13C19.881 3 21 4.119 21 5.5v13c0 1.381-1.119 2.5-2.5 2.5h-13C1.881 21 3 19.881 3 18.5v-13zM5.5 5c-.276 0-.5.224-.5.5v9.086l3-3 3 3 5-5 3 3V5.5c0-.276-.224-.5-.5-.5h-13zM19 15.414l-3-3-5 5-3-3-3 3V18.5c0 .276.224.5.5.5h13c.276 0 .5-.224.5-.5v-3.086zM9.75 7C8.784 7 8 7.784 8 8.75s.784 1.75 1.75 1.75 1.75-.784 1.75-1.75S10.716 7 9.75 7z" />
+                  </svg>
                   <input
                     type="file"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
                     accept="image/*,video/*"
                     onChange={(e) => {
                       handleMediaChange(e);
@@ -177,6 +221,35 @@ export const TweetModal: React.FC<TweetModalProps> = ({
                     }}
                   />
                 </UploadImageLabel>
+
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    style={{ cursor: 'pointer', fill: 'currentColor' }}
+                  >
+                    <title>Inserir emoji</title>
+                    <path d="M12 22.75C6.072 22.75 1.25 17.928 1.25 12S6.072 1.25 12 1.25 22.75 6.072 22.75 12 17.928 22.75 12 22.75zm0-20C6.9 2.75 2.75 6.9 2.75 12S6.9 21.25 12 21.25 21.25 17.1 21.25 12 17.1 2.75 12 2.75zm-2 9c.828 0 1.5-.672 1.5-1.5S10.828 8.75 10 8.75 8.5 9.422 8.5 10.25 9.172 11.75 10 11.75zm4 0c.828 0 1.5-.672 1.5-1.5S14.828 8.75 14 8.75 12.5 9.422 12.5 10.25 13.172 11.75 14 11.75zm-2 6.5c-2.31 0-4.32-1.35-5.31-3.32l1.32-.71c.71 1.4 2.15 2.37 3.99 2.37 1.84 0 3.28-.97 3.99-2.37l1.32.71c-.99 1.97-3 3.32-5.31 3.32z" />
+                  </svg>
+
+                  {showEmojiPicker && (
+                    <EmojiPickerPopover>
+                      {EMOJI_LIST.map((emoji, index) => (
+                        <span key={index} onClick={() => handleAddEmoji(emoji)}>
+                          {emoji}
+                        </span>
+                      ))}
+                    </EmojiPickerPopover>
+                  )}
+                </div>
               </Actions>
 
               <div
