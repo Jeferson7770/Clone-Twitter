@@ -245,11 +245,12 @@ const ProfilePage: React.FC = () => {
         </ul>
 
         <Followage>
+          {/* CORRIGIDO AQUI: Número primeiro, texto depois */}
           <span>
-            seguindo <strong>{displayUser?.following_count ?? 0}</strong>
+            <strong>{displayUser?.following_count ?? 0}</strong> Seguindo
           </span>
           <span>
-            <strong>{displayUser?.followers_count ?? 0} </strong> seguidores
+            <strong>{displayUser?.followers_count ?? 0}</strong> Seguidores
           </span>
         </Followage>
       </ProfileData>

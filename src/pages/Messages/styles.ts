@@ -52,6 +52,11 @@ export const ConversationList = styled.div`
     background-color: var(--outline);
     border-radius: 3px;
   }
+
+  /* Garante que o menu inferior e o botão de tweet não cubram os últimos itens da lista no telemóvel */
+  @media (max-width: 768px) {
+    padding-bottom: 90px;
+  }
 `;
 
 export const ConversationItem = styled.div<{
@@ -161,6 +166,14 @@ export const ChatArea = styled.div<{ $showOnMobile?: boolean }>`
   @media (max-width: 768px) {
     width: 100%;
     display: ${(props) => (props.$showOnMobile ? 'flex' : 'none')};
+
+    /* Transforma o chat numa tela cheia fixa em sobreposição no telemóvel */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
   }
 `;
 
@@ -226,9 +239,8 @@ export const MessagesList = styled.div`
     border-radius: 3px;
   }
 
-  /* NOVO: Garante espaço para rolar a tela até a última mensagem no celular */
   @media (max-width: 768px) {
-    padding-bottom: 130px;
+    padding-bottom: 80px;
   }
 `;
 
@@ -279,15 +291,14 @@ export const InputArea = styled.form`
   padding: 12px 16px;
   border-top: 1px solid var(--outline);
   background-color: var(--primary);
-  box-sizing: border-box; /* Garante que o input não ultrapasse a tela */
+  box-sizing: border-box;
 
-  /* NOVO: Fixa o input na tela, logo acima do menu inferior no celular */
   @media (max-width: 768px) {
     position: fixed;
-    bottom: 50px; /* Ajuste este valor se o seu menu inferior for mais grosso/fino */
+    bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 98;
+    z-index: 1000;
   }
 `;
 

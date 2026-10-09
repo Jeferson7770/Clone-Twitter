@@ -6,7 +6,13 @@ export const Container = styled.div`
   padding: 12px 16px;
   font-size: 14px;
   transition: background-color 0.2s;
-  border-bottom: 1px solid var(--outline, #2f3336);
+
+  /* ADICIONADO: Arredondamento e margem para descolar das bordas */
+  border-radius: 16px;
+  margin: 4px 8px;
+
+  /* ALTERADO: Tornar a linha de baixo menos visível ou removê-la para não chocar com o arredondamento */
+  border-bottom: 1px solid transparent; /* ou remova esta linha se preferir */
 
   &:hover {
     background-color: var(--twitter-dark-hover, rgba(255, 255, 255, 0.03));

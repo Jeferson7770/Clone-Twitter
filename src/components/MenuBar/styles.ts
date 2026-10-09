@@ -69,9 +69,16 @@ export const Logo = styled(Twitter)`
     width: 41px;
     height: 41px;
     margin-bottom: 20px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s;
 
     > path {
       fill: var(--twitter);
+    }
+
+    &:hover {
+      background: var(--twitter-dark-hover);
     }
   }
 `;
@@ -112,6 +119,7 @@ export const MenuButton = styled.button`
 
   @media (min-width: 1280px) {
     padding-right: 15px;
+    justify-content: flex-start;
 
     > span {
       display: inline;
