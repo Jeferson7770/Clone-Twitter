@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Obtém a URL e remove aspas, espaços ou parênteses/colchetes acidentais
-const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/'; // <-- MUDADO PARA LOCALHOST
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/'; 
 
 const cleanUrl = rawUrl.replace(/["'\][)]/g, '').trim();
 const BASE_URL = cleanUrl.endsWith('/') ? cleanUrl : `${cleanUrl}/`;

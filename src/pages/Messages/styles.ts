@@ -53,7 +53,6 @@ export const ConversationList = styled.div`
     border-radius: 3px;
   }
 
-  /* Garante que o menu inferior e o botão de tweet não cubram os últimos itens da lista no telemóvel */
   @media (max-width: 768px) {
     padding-bottom: 90px;
   }

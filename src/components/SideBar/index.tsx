@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import StickyBox from 'react-sticky-box';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,9 +36,11 @@ interface INewsItem {
   url: string;
 }
 
-interface IRssNewsItem {
-  title: string;
+interface IIbgeNewsItem {
+  id: number;
+  titulo: string;
   link: string;
+  editorias?: string;
 }
 
 interface ITrendingHashtag {
@@ -50,61 +52,114 @@ interface ITrendingHashtag {
 const SideBar: React.FC = () => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+
   const [suggestions, setSuggestions] = useState<IUserSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [hashtagResults, setHashtagResults] = useState<{ nome: string }[]>([]);
 
   const [trending, setTrending] = useState<ITrendingHashtag[]>([]);
+  const [loadingTrending, setLoadingTrending] = useState<boolean>(true);
+
   const [newsList, setNewsList] = useState<INewsItem[]>([]);
-  const [loadingContent, setLoadingContent] = useState<boolean>(true);
+  const [loadingNews, setLoadingNews] = useState<boolean>(true);
 
+  // 1. Carrega Notícias tipadas sem 'any'
   useEffect(() => {
-    const fetchContent = async () => {
-      setLoadingContent(true);
+    let isMounted = true;
 
+    const fetchNews = async () => {
       try {
-        const trendsResponse = await api.get('/hashtags/trending/');
-        setTrending(trendsResponse.data);
-      } catch (error) {
-        console.error('Erro ao carregar trending hashtags:', error);
-      }
-
-      try {
-        const newsResponse = await fetch(
-          'https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss?hl=pt-BR%26gl=BR%26ceid=BR:pt-419'
+        const response = await fetch(
+          'https://servicodados.ibge.gov.br/api/3/noticias/?qtd=4'
         );
-        const data = await newsResponse.json();
+        const data = await response.json();
 
-        if (data.status === 'ok' && data.items) {
-          const formattedNews = data.items
-            .slice(0, 5)
-            .map((item: IRssNewsItem, index: number) => {
-              const titleParts = item.title.split(' - ');
-              const source = titleParts.pop() || 'Notícias';
-              const cleanTitle = titleParts.join(' - ') || item.title;
-
+        if (isMounted && data && data.items) {
+          const formattedNews = data.items.map(
+            (item: IIbgeNewsItem, index: number) => {
+              const editoria = item.editorias
+                ? item.editorias.split(';')[0]
+                : 'Brasil';
               return {
-                id: `news-${index}`,
-                category: `${source} · Assunto do Momento`,
-                title: cleanTitle,
+                id: `news-${item.id || index}`,
+                category: `${editoria} · Assunto do Momento`,
+                title: item.titulo,
                 url: item.link,
               };
-            });
+            }
+          );
           setNewsList(formattedNews);
         }
       } catch (error) {
-        console.error('Erro ao carregar notícias:', error);
+        if (isMounted) {
+          console.error('Erro ao buscar notícias, usando fallback:', error);
+          setNewsList([
+            {
+              id: 'fallback-1',
+              category: 'Política · G1',
+              title: 'Novas diretrizes econômicas são debatidas no Congresso',
+              url: 'https://g1.globo.com',
+            },
+            {
+              id: 'fallback-2',
+              category: 'Tecnologia · CNN Brasil',
+              title: 'Avanços da inteligência artificial transformam o mercado',
+              url: 'https://www.cnnbrasil.com.br',
+            },
+            {
+              id: 'fallback-3',
+              category: 'Mundo · Valor Econômico',
+              title: 'Bolsas internacionais reagem a novos índices globais',
+              url: 'https://valor.globo.com',
+            },
+          ]);
+        }
       } finally {
-        setLoadingContent(false);
+        if (isMounted) setLoadingNews(false);
       }
     };
 
-    fetchContent();
-    const intervalId = setInterval(fetchContent, 300000);
-    return () => clearInterval(intervalId);
+    fetchNews();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  // 2. Carrega Tendências
+  const fetchTrending = useCallback(async () => {
+    try {
+      const response = await api.get('/hashtags/trending/');
+      setTrending(response.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar trending hashtags:', error);
+      setTrending([]);
+    } finally {
+      setLoadingTrending(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTrendingAsync = async () => {
+      if (isMounted) {
+        await fetchTrending();
+      }
+    };
+
+    loadTrendingAsync();
+    const intervalId = setInterval(fetchTrending, 60000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [fetchTrending]);
+
+  // 3. Autocomplete de Hashtags na pesquisa
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchTerm.startsWith('#')) {
@@ -127,19 +182,31 @@ const SideBar: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
+  // 4. Carrega Sugestões de Utilizadores
   useEffect(() => {
+    let isMounted = true;
+
     api
       .get('/users/')
       .then((response) => {
-        const filteredUsers = response.data.filter(
-          (suggestion: IUserSuggestion) =>
-            suggestion.username !== user?.username
-        );
-        setSuggestions(filteredUsers);
+        if (isMounted) {
+          const filteredUsers = response.data.filter(
+            (suggestion: IUserSuggestion) =>
+              suggestion.username !== user?.username
+          );
+          setSuggestions(filteredUsers);
+        }
       })
       .catch((error) => {
         console.error('Erro ao carregar sugestões:', error);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSuggestions(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const handleFollowChange = (delta: number) => {
@@ -211,8 +278,13 @@ const SideBar: React.FC = () => {
           <List
             title="Talvez você curta"
             elements={
-              suggestions.length > 0
-                ? filteredSuggestions.length > 0
+              loadingSuggestions
+                ? [
+                    <StatusMessage key="loading">
+                      Carregando sugestões...
+                    </StatusMessage>,
+                  ]
+                : filteredSuggestions.length > 0
                   ? filteredSuggestions
                       .slice(0, 6)
                       .map((suggestionUser) => (
@@ -230,28 +302,23 @@ const SideBar: React.FC = () => {
                       ))
                   : [
                       <StatusMessage key="not-found">
-                        Nenhum utilizador encontrado.
+                        Nenhum usuário encontrado.
                       </StatusMessage>,
                     ]
-                : [
-                    <StatusMessage key="loading">
-                      A carregar sugestões...
-                    </StatusMessage>,
-                  ]
             }
           />
 
           <List
             title="O que está acontecendo"
-            elements={
-              loadingContent
+            elements={[
+              ...(loadingTrending
                 ? [
-                    <StatusMessage key="loading-news">
-                      A carregar...
+                    <StatusMessage key="loading-trend">
+                      Atualizando tendências...
                     </StatusMessage>,
                   ]
-                : [
-                    ...trending.map((item, index) => {
+                : trending.length > 0
+                  ? trending.map((item, index) => {
                       const cleanTagName = item.nome.replace(/^#+/, '');
                       return (
                         <News
@@ -261,17 +328,24 @@ const SideBar: React.FC = () => {
                           onClick={() => navigate(`/hashtag/${cleanTagName}`)}
                         />
                       );
-                    }),
-                    ...newsList.map((news) => (
-                      <News
-                        key={news.id}
-                        category={news.category}
-                        title={news.title}
-                        url={news.url}
-                      />
-                    )),
+                    })
+                  : []),
+
+              ...(loadingNews
+                ? [
+                    <StatusMessage key="loading-news">
+                      Carregando notícias...
+                    </StatusMessage>,
                   ]
-            }
+                : newsList.map((news) => (
+                    <News
+                      key={news.id}
+                      category={news.category}
+                      title={news.title}
+                      url={news.url}
+                    />
+                  ))),
+            ]}
           />
         </Body>
       </StickyBox>

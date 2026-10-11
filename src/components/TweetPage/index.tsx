@@ -51,7 +51,7 @@ const TweetPage: React.FC = () => {
   if (loading) {
     return (
       <MessageContainer $center>
-        <p>A carregar publicação...</p>
+        <p>Carregando publicação...</p>
       </MessageContainer>
     );
   }

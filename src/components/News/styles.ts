@@ -7,13 +7,11 @@ export const Container = styled.div`
   font-size: 14px;
   transition: background-color 0.2s;
 
-  /* ADICIONADO: Arredondamento e margem para descolar das bordas */
   border-radius: 16px;
   margin: 4px 8px;
+  cursor: pointer;
 
-  /* ALTERADO: Tornar a linha de baixo menos visível ou removê-la para não chocar com o arredondamento */
-  border-bottom: 1px solid transparent; /* ou remova esta linha se preferir */
-
+  border-bottom: 1px solid transparent;
   &:hover {
     background-color: var(--twitter-dark-hover, rgba(255, 255, 255, 0.03));
   }
@@ -36,6 +34,10 @@ export const Container = styled.div`
     overflow: hidden;
     text-overflow: ellipsis;
   }
+`;
+
+export const HashtagText = styled.span`
+  color: var(--twitter, #1d9bf0);
 `;
 
 export const NewsListContainer = styled.div`

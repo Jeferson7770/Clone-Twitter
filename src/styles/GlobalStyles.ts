@@ -25,7 +25,6 @@ export default createGlobalStyle`
     background: var(--primary);
   }
 
-  /* Conecta o ThemeProvider do React diretamente às tuas variáveis CSS globais */
   :root {
     --primary: ${(props) => props.theme.primary};
     --secondary: ${(props) => props.theme.secondary};

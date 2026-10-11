@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container } from './styles';
+import { Container, HashtagText } from './styles';
 
 interface Props {
   category: string;
@@ -17,12 +17,20 @@ const News: React.FC<Props> = ({ category, title, url, onClick }) => {
     }
   };
 
-  const formattedTitle = title.replace(/^#+/, '#');
+  const renderFormattedTitle = (text: string) => {
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      if (part.startsWith('#') && part.length > 1) {
+        return <HashtagText key={index}>{part}</HashtagText>;
+      }
+      return part;
+    });
+  };
 
   return (
-    <Container onClick={handleClick} style={{ cursor: 'pointer' }}>
+    <Container onClick={handleClick}>
       <span>{category}</span>
-      <strong>{formattedTitle}</strong>
+      <strong>{renderFormattedTitle(title)}</strong>
     </Container>
   );
 };

@@ -57,7 +57,6 @@ export const AuthPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    // Validação de campos obrigatórios incluindo a data de nascimento
     if (!firstName || !username || !password || !birthDate) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
@@ -89,11 +88,9 @@ export const AuthPage: React.FC = () => {
       }
     }
 
-    // --- CÁLCULO E VALIDAÇÃO DE IDADE ---
     const today = new Date();
     const birthDateObj = new Date(birthDate);
 
-    // Ajuste de fuso horário para garantir que o dia seja calculado corretamente
     const userTimezoneOffset = birthDateObj.getTimezoneOffset() * 60000;
     const adjustedBirthDate = new Date(
       birthDateObj.getTime() + userTimezoneOffset
@@ -102,8 +99,6 @@ export const AuthPage: React.FC = () => {
     let age = today.getFullYear() - adjustedBirthDate.getFullYear();
     const monthDiff = today.getMonth() - adjustedBirthDate.getMonth();
 
-    // Ajusta a idade se o mês atual for anterior ao do aniversário,
-    // ou se estiver no mesmo mês mas o dia atual for anterior ao do aniversário
     if (
       monthDiff < 0 ||
       (monthDiff === 0 && today.getDate() < adjustedBirthDate.getDate())
@@ -111,14 +106,12 @@ export const AuthPage: React.FC = () => {
       age--;
     }
 
-    // Regra: Bloqueia menores de 16 anos
     if (age < 16) {
       setError(
         'Menores de 16 anos precisam ter a conta vinculada e autorizada por um responsável legal com controle parental.'
       );
       return;
     }
-    // ------------------------------------
 
     setStep(2);
   };
@@ -430,7 +423,7 @@ export const AuthPage: React.FC = () => {
           <>
             <Title>Escolher uma foto de perfil</Title>
             <SubTitle>
-              Tem uma selfie favorita? Carregue agora para o seu perfil.
+              Tem uma selfie favorita? Envie agora para o seu perfil.
             </SubTitle>
 
             <UploadBox>
@@ -456,7 +449,7 @@ export const AuthPage: React.FC = () => {
               ) : (
                 <>
                   <UploadIcon />
-                  <span>Carregar</span>
+                  <span>Carregando...</span>
                 </>
               )}
             </UploadBox>

@@ -141,7 +141,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
           Notification.permission === 'granted'
         ) {
           new Notification('Nova Mensagem Direta', {
-            body: 'Recebeste uma nova mensagem!',
+            body: 'Você recebeu uma nova mensagem!',
             icon: '/favicon.ico',
           });
         }
@@ -291,7 +291,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
       <Botside
         onClick={handleLogout}
         style={{ cursor: 'pointer' }}
-        title="Terminar sessão"
+        title="Encerrar sessão"
       >
         <Avatar
           style={

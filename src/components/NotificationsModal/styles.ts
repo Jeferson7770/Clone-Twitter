@@ -17,14 +17,14 @@ export const Overlay = styled.div`
 `;
 
 export const ModalContainer = styled.div`
-  background: var(--primary); /* CORRIGIDO: Agora acompanha o tema */
+  background: var(--primary); 
   width: 100%;
   max-width: 600px;
   max-height: 80vh;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* CORRIGIDO: Sombra visível em ambos os temas */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
   overflow: hidden;
   z-index: 10000;
 `;
@@ -64,7 +64,7 @@ export const CloseButton = styled.button`
       128,
       128,
       0.2
-    ); /* CORRIGIDO: Hover visível em fundos brancos e pretos */
+    ); 
   }
 `;
 
@@ -94,7 +94,7 @@ export const NotificationItem = styled.div`
       128,
       128,
       0.1
-    ); /* CORRIGIDO: Hover visível em fundos brancos e pretos */
+    ); 
   }
 `;
 

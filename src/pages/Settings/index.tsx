@@ -43,8 +43,8 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
         navigate('/auth');
       }
     } catch (error) {
-      console.error('Erro ao eliminar conta', error);
-      alert('Ocorreu um erro ao tentar apagar a tua conta. Tenta novamente.');
+      console.error('Erro ao excluir a conta', error);
+      alert('Ocorreu um erro ao tentar excluir a sua conta. Tente novamente.');
       setIsLoading(false);
     }
   };
@@ -81,22 +81,22 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
                 cursor: 'pointer',
               }}
             >
-              Alternar Tema
+              Mudar tema
             </button>
           </div>
         )}
 
-        <Title>A tua conta</Title>
+        <Title>A sua conta</Title>
         <Description>
-          Apagar a conta significa dizer adeus ao teu perfil, publicações,
-          mensagens e todas as tuas interações. Tudo isto vai desaparecer para
-          sempre e <strong>não há como voltar atrás</strong>.
+          Excluir a conta significa dizer adeus ao seu perfil, publicações,
+          mensagens e a todas as suas interações. Tudo isso vai desaparecer para
+          sempre e <strong>não tem como voltar atrás.</strong>.
         </Description>
 
         <SafeMessage>
-          Vieste parar aqui por engano? Fica tranquilo, a tua conta continua a
-          salvo. Basta clicares na seta lá em cima para voltares ao que estavas
-          a fazer.
+          Veio parar aqui por engano? Fique tranquilo, a sua conta continua
+          segura. Basta clicar na seta lá em cima para voltar ao que estava
+          fazendo.
         </SafeMessage>
 
         <DeleteButton onClick={() => setIsConfirming(true)}>
@@ -107,12 +107,11 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
       {isConfirming && (
         <ConfirmModal>
           <ModalContent>
-            <h3>Tens a certeza absoluta?</h3>
+            <h3>Você tem certeza absoluta?</h3>
             <p>
-              Ao confirmares, perdes o acesso à tua conta na mesma hora e todos
-              os teus dados vão desaparecer para sempre.
+              Ao confirmar, você perde o acesso à sua conta na mesma hora e
+              todos os seus dados vão desaparecer para sempre.
             </p>
-
             <ActionGroup>
               <ConfirmButton onClick={handleDelete} disabled={isLoading}>
                 {isLoading ? 'A apagar...' : 'Sim, apagar conta'}

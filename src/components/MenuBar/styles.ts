@@ -66,8 +66,10 @@ export const Logo = styled(Twitter)`
 
   @media (min-width: 500px) {
     display: block;
-    width: 41px;
-    height: 41px;
+    width: 30px;
+    height: 30px;
+    padding: 8px;
+    box-sizing: content-box;
     margin-bottom: 20px;
     cursor: pointer;
     border-radius: 50%;

@@ -119,7 +119,6 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
     return () => controller.abort();
   }, [username, hashtag, sortBy]);
 
-  // CORREÇÃO: Remove o tweet correspondente ao ID ou unique_id em tempo real
   const handleDeleteTweet = (deletedId: string | number) => {
     setTweets((prevTweets) =>
       prevTweets.filter((t) => {
@@ -303,7 +302,7 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
 
       <Tweets>
         {loading ? (
-          <Message>A carregar...</Message>
+          <Message>Carregando...</Message>
         ) : tweets.length > 0 ? (
           tweets.map((tweet) => {
             const tweetWithId = tweet as ITweetData & { unique_id?: string };

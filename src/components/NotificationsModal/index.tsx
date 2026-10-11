@@ -155,7 +155,7 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                 color: 'var(--gray)',
               }}
             >
-              A carregar...
+              Carregando...
             </div>
           ) : notifications.length === 0 ? (
             <div

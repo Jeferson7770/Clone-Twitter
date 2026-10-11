@@ -55,7 +55,7 @@ export function App() {
     return (
       <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
         <GlobalStyles />
-        <LoadingContainer>A carregar...</LoadingContainer>
+        <LoadingContainer>Carregando...</LoadingContainer>
       </ThemeProvider>
     );
   }

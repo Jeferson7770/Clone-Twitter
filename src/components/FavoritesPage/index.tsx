@@ -40,7 +40,7 @@ const FavoritesPage: React.FC = () => {
         <p
           style={{ textAlign: 'center', padding: '20px', color: 'var(--gray)' }}
         >
-          A carregar favoritos...
+          Carregando favoritos...
         </p>
       ) : tweets.length > 0 ? (
         tweets.map((tweet, index) => (
@@ -50,7 +50,7 @@ const FavoritesPage: React.FC = () => {
         <p
           style={{ textAlign: 'center', padding: '40px', color: 'var(--gray)' }}
         >
-          Ainda não favoritaste nenhum tweet.
+          Você ainda não favoritou nenhum tweet.
         </p>
       )}
     </Container>
