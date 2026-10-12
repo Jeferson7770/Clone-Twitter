@@ -7,7 +7,6 @@ import {
   FavoriteBorder,
   Person,
   ExitToApp,
-  Twitter,
   Settings,
   LightMode,
   DarkMode,
@@ -61,21 +60,23 @@ export const Topside = styled.div`
   }
 `;
 
-export const Logo = styled(Twitter)`
+export const Logo = styled.div`
   display: none;
 
   @media (min-width: 500px) {
-    display: block;
-    width: 30px;
-    height: 30px;
-    padding: 8px;
-    box-sizing: content-box;
-    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 12px;
     cursor: pointer;
     border-radius: 50%;
     transition: background 0.2s;
 
-    > path {
+    > svg {
+      width: 42px;
+      height: 42px;
       fill: var(--twitter);
     }
 

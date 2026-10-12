@@ -65,7 +65,6 @@ const SideBar: React.FC = () => {
   const [newsList, setNewsList] = useState<INewsItem[]>([]);
   const [loadingNews, setLoadingNews] = useState<boolean>(true);
 
-  // 1. Carrega Notícias tipadas sem 'any'
   useEffect(() => {
     let isMounted = true;
 
@@ -128,7 +127,6 @@ const SideBar: React.FC = () => {
     };
   }, []);
 
-  // 2. Carrega Tendências
   const fetchTrending = useCallback(async () => {
     try {
       const response = await api.get('/hashtags/trending/');
@@ -159,7 +157,6 @@ const SideBar: React.FC = () => {
     };
   }, [fetchTrending]);
 
-  // 3. Autocomplete de Hashtags na pesquisa
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchTerm.startsWith('#')) {
@@ -182,7 +179,6 @@ const SideBar: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  // 4. Carrega Sugestões de Utilizadores
   useEffect(() => {
     let isMounted = true;
 

@@ -227,7 +227,7 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
           />
           <InputContainer>
             <TweetInput
-              placeholder="O que está a acontecer?"
+              placeholder="O que está acontecendo?"
               value={newTweetContent}
               onChange={(e) => setNewTweetContent(e.target.value)}
               rows={
