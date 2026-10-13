@@ -1,6 +1,9 @@
 import styled from 'styled-components';
 
 export const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   background: var(--primary);
 `;
 
@@ -41,4 +44,16 @@ export const Header = styled.div`
     color: var(--white);
     margin: 0;
   }
+`;
+
+export const LoadingMessage = styled.p`
+  text-align: center;
+  padding: 20px;
+  color: var(--gray);
+`;
+
+export const EmptyMessage = styled.p`
+  text-align: center;
+  padding: 40px;
+  color: var(--gray);
 `;

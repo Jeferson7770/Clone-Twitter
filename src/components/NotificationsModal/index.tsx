@@ -19,6 +19,8 @@ import {
   CommentIcon,
   PostIcon,
   FollowIcon,
+  LoadingState,
+  EmptyState,
 } from './styles';
 
 interface NotificationModalProps {
@@ -115,7 +117,7 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   };
 
   const handleUserClick = (e: React.MouseEvent, username?: string) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     onClose();
 
     if (username) {
@@ -148,25 +150,9 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
         <ScrollableContent>
           {loading ? (
-            <div
-              style={{
-                padding: '20px',
-                textAlign: 'center',
-                color: 'var(--gray)',
-              }}
-            >
-              Carregando...
-            </div>
+            <LoadingState>Carregando...</LoadingState>
           ) : notifications.length === 0 ? (
-            <div
-              style={{
-                padding: '20px',
-                textAlign: 'center',
-                color: 'var(--gray)',
-              }}
-            >
-              Nenhuma notificação no momento.
-            </div>
+            <EmptyState>Nenhuma notificação no momento.</EmptyState>
           ) : (
             notifications.map((notif, index) => {
               const username =
@@ -184,22 +170,15 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                 <NotificationItem
                   key={`${notif.id}-${index}`}
                   onClick={() => handleNotificationClick(notif)}
-                  style={{ cursor: 'pointer' }}
                 >
                   <IconArea>{renderIcon(notif.type)}</IconArea>
                   <ContentArea>
                     <UserAvatar
-                      style={{
-                        backgroundImage: `url(${avatar})`,
-                        cursor: 'pointer',
-                      }}
+                      $avatarUrl={avatar}
                       onClick={(e) => handleUserClick(e, rawUsername)}
                     />
                     <UserInfo>
-                      <strong
-                        style={{ cursor: 'pointer' }}
-                        onClick={(e) => handleUserClick(e, rawUsername)}
-                      >
+                      <strong onClick={(e) => handleUserClick(e, rawUsername)}>
                         {username}
                       </strong>{' '}
                       <span>

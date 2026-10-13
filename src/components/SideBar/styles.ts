@@ -8,7 +8,7 @@ export const Container = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 350px; /* Largura padrão máxima para manter proporção agradável */
+    max-width: 350px; 
 
     height: 100vh;
     position: sticky;

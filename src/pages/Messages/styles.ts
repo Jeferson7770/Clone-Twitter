@@ -166,7 +166,6 @@ export const ChatArea = styled.div<{ $showOnMobile?: boolean }>`
     width: 100%;
     display: ${(props) => (props.$showOnMobile ? 'flex' : 'none')};
 
-    /* Transforma o chat numa tela cheia fixa em sobreposição no telemóvel */
     position: fixed;
     top: 0;
     left: 0;

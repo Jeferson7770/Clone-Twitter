@@ -17,6 +17,8 @@ import {
   ActionGroup,
   ConfirmButton,
   CancelButton,
+  AppearanceContainer,
+  ThemeButton,
 } from './styles';
 
 interface SettingsProps {
@@ -60,7 +62,7 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
 
       <Content>
         {toggleTheme && currentTheme && (
-          <div style={{ marginBottom: '40px' }}>
+          <AppearanceContainer>
             <Title>Aparência</Title>
             <Description>
               O tema atual é:{' '}
@@ -68,29 +70,15 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
                 {currentTheme === 'light' ? 'Claro ☀️' : 'Escuro 🌙'}
               </strong>
             </Description>
-            <button
-              onClick={toggleTheme}
-              style={{
-                marginTop: '10px',
-                padding: '10px 20px',
-                borderRadius: '20px',
-                border: '1px solid var(--twitter)',
-                background: 'transparent',
-                color: 'var(--twitter)',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
-            >
-              Mudar tema
-            </button>
-          </div>
+            <ThemeButton onClick={toggleTheme}>Mudar tema</ThemeButton>
+          </AppearanceContainer>
         )}
 
         <Title>A sua conta</Title>
         <Description>
           Excluir a conta significa dizer adeus ao seu perfil, publicações,
           mensagens e a todas as suas interações. Tudo isso vai desaparecer para
-          sempre e <strong>não tem como voltar atrás.</strong>.
+          sempre e <strong>não tem como voltar atrás.</strong>
         </Description>
 
         <SafeMessage>

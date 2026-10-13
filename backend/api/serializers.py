@@ -100,7 +100,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(required=False, allow_null=True)
     avatar = serializers.ImageField(required=False, allow_null=True)
 
-    # Campo adicionado para validar e-mails únicos
     email = serializers.EmailField(
         required=True,
         validators=[

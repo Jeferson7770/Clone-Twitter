@@ -20,6 +20,10 @@ export const Header = styled.header`
   margin-bottom: 20px;
 `;
 
+export const HeaderSpacer = styled.div`
+  width: 40px;
+`;
+
 export const BackButton = styled.button`
   background: none;
   border: none;
@@ -66,6 +70,11 @@ export const SubTitle = styled.p`
   font-size: 14px;
   color: var(--gray);
   margin-bottom: 24px;
+`;
+
+export const PasswordSubTitle = styled(SubTitle)`
+  margin-top: 10px;
+  margin-bottom: 20px;
 `;
 
 export const Form = styled.form`
@@ -162,6 +171,16 @@ export const UploadIcon = styled(Person)`
   width: 48px;
   height: 48px;
   color: var(--twitter);
+`;
+
+export const AvatarContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 `;
 
 export const AvatarPreview = styled.img`

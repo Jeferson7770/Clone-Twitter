@@ -176,6 +176,18 @@ export const UploadImageLabel = styled.label`
   }
 `;
 
+export const EmojiContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+export const FooterRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
 export const ImageIcon = styled.div`
   display: flex;
   align-items: center;

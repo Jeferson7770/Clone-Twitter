@@ -25,6 +25,8 @@ import {
   Footer,
   Actions,
   UploadImageLabel,
+  EmojiContainer,
+  FooterRight,
   TweetButton,
   CharCounter,
   EmojiPickerPopover,
@@ -190,17 +192,8 @@ export const TweetModal: React.FC<TweetModalProps> = ({
             )}
 
             <Footer>
-              <Actions
-                style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
-              >
-                <UploadImageLabel
-                  title="Adicionar foto ou vídeo"
-                  style={{
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
+              <Actions>
+                <UploadImageLabel title="Adicionar foto ou vídeo">
                   <svg
                     viewBox="0 0 24 24"
                     width="20"
@@ -222,13 +215,7 @@ export const TweetModal: React.FC<TweetModalProps> = ({
                   />
                 </UploadImageLabel>
 
-                <div
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
+                <EmojiContainer>
                   <svg
                     viewBox="0 0 24 24"
                     width="20"
@@ -249,12 +236,10 @@ export const TweetModal: React.FC<TweetModalProps> = ({
                       ))}
                     </EmojiPickerPopover>
                   )}
-                </div>
+                </EmojiContainer>
               </Actions>
 
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
-              >
+              <FooterRight>
                 {content.length > 0 && (
                   <CharCounter $isWarning={charsLeft <= 20}>
                     {charsLeft}
@@ -264,7 +249,7 @@ export const TweetModal: React.FC<TweetModalProps> = ({
                 <TweetButton type="submit" disabled={isButtonDisabled}>
                   {loading ? 'Enviando...' : 'Tweetar'}
                 </TweetButton>
-              </div>
+              </FooterRight>
             </Footer>
           </Form>
         </Body>

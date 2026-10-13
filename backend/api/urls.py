@@ -43,7 +43,6 @@ urlpatterns = [
         UnreadNotificationCountView.as_view(),
         name="unread-count",
     ),
-    # Rotas de Hashtags
     path(
         "hashtags/trending/", TrendingHashtagsView.as_view(), name="trending-hashtags"
     ),

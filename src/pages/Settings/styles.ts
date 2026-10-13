@@ -52,6 +52,26 @@ export const Content = styled.div`
   gap: 12px;
 `;
 
+export const AppearanceContainer = styled.div`
+  margin-bottom: 40px;
+`;
+
+export const ThemeButton = styled.button`
+  margin-top: 10px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--twitter);
+  background: transparent;
+  color: var(--twitter);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--twitter-dark-hover);
+  }
+`;
+
 export const Title = styled.h1`
   font-size: 22px;
   font-weight: bold;
@@ -112,7 +132,7 @@ export const ModalContent = styled.div`
   border-radius: 16px;
   padding: 24px;
   text-align: center;
-  box-shadow: 0px 0px 15px rgba(217, 217, 217, 0.1); 
+  box-shadow: 0px 0px 15px rgba(217, 217, 217, 0.1);
 
   h3 {
     color: var(--white);
@@ -152,9 +172,7 @@ export const ConfirmButton = styled.button`
   }
 
   &:hover:not(:disabled) {
-    filter: brightness(
-      0.85
-    ); 
+    filter: brightness(0.85);
   }
 `;
 

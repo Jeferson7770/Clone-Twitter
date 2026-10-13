@@ -61,6 +61,13 @@ import {
   QuotedHeader,
   QuotedAvatar,
   QuotedContent,
+  CommentAuthorContainer,
+  CommentHeaderBar,
+  CommentHeaderTitle,
+  CloseCommentsButton,
+  CancelReplyButton,
+  RetweetCountSpan,
+  TrashIconSpan,
 } from './styles';
 
 export interface IComment {
@@ -170,7 +177,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const isOwner = user?.username === tweet.author.username;
 
-  // Fecha a seção de comentários ao clicar fora do componente Tweet
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -565,7 +571,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const handleUserClick = (e: React.MouseEvent, username: string) => {
     e.stopPropagation();
-    navigate(`/${username}`);
+    navigate(`/profile/${username}`);
   };
 
   const formattedDate = new Date(tweet.created_at).toLocaleDateString('pt-BR', {
@@ -574,7 +580,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   });
 
   const getAvatarUrl = (avatarPath?: string | null) => {
-    if (!avatarPath) return 'none';
+    if (!avatarPath) return undefined;
 
     let baseURL = 'http://localhost:8000';
     const meta = import.meta as unknown as { env: Record<string, string> };
@@ -583,8 +589,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     }
 
     return avatarPath.startsWith('http')
-      ? `url(${avatarPath})`
-      : `url(${baseURL}${avatarPath})`;
+      ? avatarPath
+      : `${baseURL}${avatarPath}`;
   };
 
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
@@ -592,22 +598,18 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       <React.Fragment key={`${comment.id}-${index}`}>
         <CommentItem className={isNested ? 'is-reply' : ''}>
           <CommentAvatar
-            style={{
-              backgroundImage: getAvatarUrl(comment.author.profile?.avatar),
-              cursor: 'pointer',
-            }}
+            $avatarUrl={getAvatarUrl(comment.author.profile?.avatar)}
             onClick={(e) => handleUserClick(e, comment.author.username)}
           />
           <CommentContentContainer>
-            <div
-              style={{ cursor: 'pointer', display: 'inline-block' }}
+            <CommentAuthorContainer
               onClick={(e) => handleUserClick(e, comment.author.username)}
             >
               <strong>
                 {comment.author.first_name || comment.author.username}
               </strong>
               <span>@{comment.author.username}</span>
-            </div>
+            </CommentAuthorContainer>
             <p>{comment.content}</p>
             <CommentItemActions>
               <ActionWrapper
@@ -636,7 +638,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   onClick={(e) => handleDeleteComment(e, comment.id)}
                   title="Deletar Comentário"
                 >
-                  <span style={{ fontSize: '14px' }}>🗑️</span>
+                  <TrashIconSpan>🗑️</TrashIconSpan>
                 </ActionWrapper>
               )}
             </CommentItemActions>
@@ -662,23 +664,13 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
       <Body>
         <Avatar
-          style={
-            tweet.author.profile?.avatar
-              ? {
-                  backgroundImage: getAvatarUrl(tweet.author.profile.avatar),
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  cursor: 'pointer',
-                }
-              : { cursor: 'pointer' }
-          }
+          $avatarUrl={getAvatarUrl(tweet.author.profile?.avatar)}
           onClick={(e) => handleUserClick(e, tweet.author.username)}
         />
 
         <Content>
           <Header>
             <HeaderInfo
-              style={{ cursor: 'pointer' }}
               onClick={(e) => handleUserClick(e, tweet.author.username)}
             >
               <strong>
@@ -708,7 +700,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
             ) : (
               <>
                 <ImageContent
-                  style={{ backgroundImage: `url(${tweet.media})` }}
+                  $mediaUrl={tweet.media}
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsImageOpen(true);
@@ -737,18 +729,14 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
             >
               <QuotedHeader>
                 <QuotedAvatar
-                  style={{
-                    backgroundImage: getAvatarUrl(
-                      tweet.quoted_tweet.author.profile?.avatar
-                    ),
-                    cursor: 'pointer',
-                  }}
+                  $avatarUrl={getAvatarUrl(
+                    tweet.quoted_tweet.author.profile?.avatar
+                  )}
                   onClick={(e) =>
                     handleUserClick(e, tweet.quoted_tweet!.author.username)
                   }
                 />
                 <strong
-                  style={{ cursor: 'pointer' }}
                   onClick={(e) =>
                     handleUserClick(e, tweet.quoted_tweet!.author.username)
                   }
@@ -757,7 +745,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                     tweet.quoted_tweet.author.username}
                 </strong>
                 <span
-                  style={{ cursor: 'pointer' }}
                   onClick={(e) =>
                     handleUserClick(e, tweet.quoted_tweet!.author.username)
                   }
@@ -779,9 +766,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   />
                 ) : (
                   <ImageContent
-                    style={{
-                      backgroundImage: `url(${tweet.quoted_tweet.media})`,
-                    }}
+                    $mediaUrl={tweet.quoted_tweet.media}
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
@@ -803,13 +788,12 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 $isRetweeted={isRetweeted}
               >
                 <RetweetIcon />
-                <span
+                <RetweetCountSpan
                   onClick={handleOpenRetweetsModal}
-                  style={{ cursor: 'pointer', marginLeft: '4px' }}
                   title="Ver quem retuitou"
                 >
                   {retweetsCount}
-                </span>
+                </RetweetCountSpan>
               </Status>
 
               {showRetweetMenu && (
@@ -843,41 +827,16 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
           onClick={(e) => e.stopPropagation()}
           style={{ position: 'relative' }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '8px 16px',
-              borderTop: '1px solid var(--outline, #2f3336)',
-            }}
-          >
-            <span
-              style={{
-                fontWeight: 'bold',
-                fontSize: '14px',
-                color: 'var(--gray, #71767b)',
-              }}
-            >
-              Respostas
-            </span>
-            <button
+          <CommentHeaderBar>
+            <CommentHeaderTitle>Respostas</CommentHeaderTitle>
+            <CloseCommentsButton
               type="button"
               onClick={() => setIsCommentSectionOpen(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--white, #fff)',
-                fontSize: '18px',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '50%',
-              }}
               title="Fechar respostas"
             >
               ✕
-            </button>
-          </div>
+            </CloseCommentsButton>
+          </CommentHeaderBar>
 
           <CommentScrollArea>
             <CommentSection>
@@ -915,21 +874,13 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 <span>
                   Respondendo a <strong>@{replyingTo.username}</strong>
                 </span>
-                <button
+                <CancelReplyButton
                   type="button"
                   onClick={() => setReplyingTo(null)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--white, #fff)',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    padding: '0 4px',
-                  }}
                   title="Cancelar resposta"
                 >
                   ✕
-                </button>
+                </CancelReplyButton>
               </ReplyIndicator>
             )}
             <CommentForm onSubmit={handleCommentSubmit}>
@@ -1041,11 +992,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
-                          style={{
-                            backgroundImage: getAvatarUrl(
-                              retweetUser.profile?.avatar
-                            ),
-                          }}
+                          $avatarUrl={getAvatarUrl(retweetUser.profile?.avatar)}
                         />
                         <LikeUserInfo>
                           <strong>
@@ -1056,19 +1003,20 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
+                          type="button"
                           className={
                             retweetUser.is_following ? 'following' : 'follow'
                           }
                           onClick={(e) => handleToggleFollow(e, retweetUser)}
                         >
-                          {retweetUser.is_following ? 'Seguindo' : 'Seguir'}
+                          {retweetUser.is_following ? 'A seguir' : 'Seguir'}
                         </button>
                       )}
                     </LikeUserItem>
                   );
                 })
               ) : (
-                <LikesModalEmpty>Nenhum retuite ainda.</LikesModalEmpty>
+                <LikesModalEmpty>Nenhum retweet ainda.</LikesModalEmpty>
               )}
             </LikesList>
           </LikesModalContainer>
@@ -1085,14 +1033,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
           <LikesModalContainer onClick={(e) => e.stopPropagation()}>
             <LikesModalHeader>
               <h3>{likesModalTitle}</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsLikesModalOpen(false);
-                }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsLikesModalOpen(false)}>✕</button>
             </LikesModalHeader>
 
             <LikesList>
@@ -1112,11 +1053,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
-                          style={{
-                            backgroundImage: getAvatarUrl(
-                              likedUser.profile?.avatar
-                            ),
-                          }}
+                          $avatarUrl={getAvatarUrl(likedUser.profile?.avatar)}
                         />
                         <LikeUserInfo>
                           <strong>
@@ -1127,12 +1064,13 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
+                          type="button"
                           className={
                             likedUser.is_following ? 'following' : 'follow'
                           }
                           onClick={(e) => handleToggleFollow(e, likedUser)}
                         >
-                          {likedUser.is_following ? 'Seguindo' : 'Seguir'}
+                          {likedUser.is_following ? 'A seguir' : 'Seguir'}
                         </button>
                       )}
                     </LikeUserItem>

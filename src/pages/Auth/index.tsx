@@ -12,12 +12,15 @@ import {
   Content,
   Title,
   SubTitle,
+  PasswordSubTitle,
+  HeaderSpacer,
   Form,
   InputWrapper,
   FloatingInputBox,
   CharCounter,
   UploadBox,
   UploadIcon,
+  AvatarContainer,
   AvatarPreview,
   FooterActions,
   NextButton,
@@ -202,10 +205,10 @@ export const AuthPage: React.FC = () => {
             <BackIcon />
           </BackButton>
         ) : (
-          <div style={{ width: 40 }} />
+          <HeaderSpacer />
         )}
         <TwitterLogo />
-        <div style={{ width: 40 }} />
+        <HeaderSpacer />
       </Header>
 
       <Content>
@@ -216,10 +219,10 @@ export const AuthPage: React.FC = () => {
             <Title>Encontre sua conta do Twitter</Title>
             {forgotPasswordSuccess ? (
               <>
-                <SubTitle style={{ marginTop: '10px', marginBottom: '20px' }}>
+                <PasswordSubTitle>
                   Se o e-mail existir em nossa base, você receberá um link com
                   as instruções para redefinir sua senha.
-                </SubTitle>
+                </PasswordSubTitle>
                 <FooterActions>
                   <NextButton
                     onClick={() => {
@@ -234,9 +237,9 @@ export const AuthPage: React.FC = () => {
               </>
             ) : (
               <>
-                <SubTitle style={{ marginTop: '10px', marginBottom: '20px' }}>
+                <PasswordSubTitle>
                   Insira o e-mail associado à sua conta para alterar sua senha.
-                </SubTitle>
+                </PasswordSubTitle>
                 <Form onSubmit={handleForgotPassword}>
                   <InputWrapper>
                     <FloatingInputBox>
@@ -433,19 +436,9 @@ export const AuthPage: React.FC = () => {
                 onChange={handleAvatarChange}
               />
               {avatarPreview ? (
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '50%',
-                  }}
-                >
+                <AvatarContainer>
                   <AvatarPreview src={avatarPreview} alt="Preview do avatar" />
-                </div>
+                </AvatarContainer>
               ) : (
                 <>
                   <UploadIcon />

@@ -182,9 +182,6 @@ class TweetHashtag(models.Model):
         unique_together = ("hashtag", "tweet")
 
 
-# -------------------------------------------------------------------
-# SIGNALS
-# -------------------------------------------------------------------
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -262,21 +259,17 @@ def extrair_hashtags_do_tweet(sender, instance, created, **kwargs):
     if not created:
         return
 
-    # Using regex to extract words starting with #
     hashtags_encontradas = set(re.findall(r'#([^\s#.,;:!?"\']+)', instance.content))
 
     for tag in hashtags_encontradas:
         nome_normalizado = tag.lower()
 
-        # Get or create the hashtag. The default count will be 0 on creation.
         hashtag_obj, is_new = Hashtag.objects.get_or_create(
             nome_normalizado=nome_normalizado, defaults={"nome": f"#{tag}"}
         )
 
-        # Safely increment the usage count using the F() object for atomic database updates
         Hashtag.objects.filter(id=hashtag_obj.id).update(
             quantidade_total_de_uso=F("quantidade_total_de_uso") + 1
         )
 
-        # Create the link between the Tweet and the Hashtag
         TweetHashtag.objects.get_or_create(hashtag=hashtag_obj, tweet=instance)

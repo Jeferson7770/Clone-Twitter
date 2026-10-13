@@ -184,6 +184,18 @@ export const ThemeDarkIcon = styled(DarkMode)`
   ${iconCSS}
 `;
 
+export const ThemeIconContainer = styled.div`
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const ThemeEmojiSpan = styled.span`
+  font-size: 24px;
+`;
+
 export const ThemeIconWrapper = styled.div`
   width: 30px;
   height: 30px;
@@ -273,7 +285,7 @@ export const Botside = styled.div`
   }
 `;
 
-export const Avatar = styled.div<{ $avatarUrl?: string }>`
+export const Avatar = styled.div<{ $avatarUrl?: string | null }>`
   width: 39px;
   height: 39px;
   flex-shrink: 0;

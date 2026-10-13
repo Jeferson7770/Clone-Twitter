@@ -3,13 +3,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import Tweet, { type ITweetData } from '../Tweet';
 
-import styled from 'styled-components';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
+import { Container, LoadingMessage, EmptyMessage } from './styles';
 
 const FavoritesPage: React.FC = () => {
   const [tweets, setTweets] = useState<ITweetData[]>([]);
@@ -37,21 +31,13 @@ const FavoritesPage: React.FC = () => {
   return (
     <Container>
       {loading ? (
-        <p
-          style={{ textAlign: 'center', padding: '20px', color: 'var(--gray)' }}
-        >
-          Carregando favoritos...
-        </p>
+        <LoadingMessage>Carregando favoritos...</LoadingMessage>
       ) : tweets.length > 0 ? (
         tweets.map((tweet, index) => (
           <Tweet key={`${tweet.id}-${index}`} tweet={tweet} />
         ))
       ) : (
-        <p
-          style={{ textAlign: 'center', padding: '40px', color: 'var(--gray)' }}
-        >
-          Você ainda não favoritou nenhum tweet.
-        </p>
+        <EmptyMessage>Você ainda não favoritou nenhum tweet.</EmptyMessage>
       )}
     </Container>
   );

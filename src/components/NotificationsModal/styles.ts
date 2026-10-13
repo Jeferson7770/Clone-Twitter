@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Favorite, Chat, PersonAdd } from 'styled-icons/material';
 import { ArrowRepeat } from 'styled-icons/bootstrap';
 import { Twitter } from 'styled-icons/boxicons-logos';
@@ -17,14 +17,14 @@ export const Overlay = styled.div`
 `;
 
 export const ModalContainer = styled.div`
-  background: var(--primary); 
+  background: var(--primary);
   width: 100%;
   max-width: 600px;
   max-height: 80vh;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   z-index: 10000;
 `;
@@ -59,12 +59,7 @@ export const CloseButton = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(
-      128,
-      128,
-      128,
-      0.2
-    ); 
+    background: rgba(128, 128, 128, 0.2);
   }
 `;
 
@@ -89,12 +84,7 @@ export const NotificationItem = styled.div`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(
-      128,
-      128,
-      128,
-      0.1
-    ); 
+    background: rgba(128, 128, 128, 0.1);
   }
 `;
 
@@ -111,16 +101,19 @@ export const LikeIcon = styled(Favorite)`
   height: 30px;
   fill: var(--like);
 `;
+
 export const RetweetIcon = styled(ArrowRepeat)`
   width: 30px;
   height: 30px;
   fill: var(--retweet);
 `;
+
 export const CommentIcon = styled(Chat)`
   width: 30px;
   height: 30px;
   fill: var(--twitter);
 `;
+
 export const PostIcon = styled(Twitter)`
   width: 30px;
   height: 30px;
@@ -139,7 +132,7 @@ export const ContentArea = styled.div`
   flex: 1;
 `;
 
-export const UserAvatar = styled.div`
+export const UserAvatar = styled.div<{ $avatarUrl?: string }>`
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -147,6 +140,13 @@ export const UserAvatar = styled.div`
   background-size: cover;
   background-position: center;
   margin-bottom: 8px;
+  cursor: pointer;
+
+  ${(props) =>
+    props.$avatarUrl &&
+    css`
+      background-image: url(${props.$avatarUrl});
+    `}
 `;
 
 export const UserInfo = styled.div`
@@ -156,6 +156,8 @@ export const UserInfo = styled.div`
 
   > strong {
     font-weight: bold;
+    cursor: pointer;
+
     &:hover {
       text-decoration: underline;
     }
@@ -170,4 +172,16 @@ export const TweetPreview = styled.p`
   font-size: 15px;
   color: var(--gray);
   line-height: 20px;
+`;
+
+export const LoadingState = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: var(--gray);
+`;
+
+export const EmptyState = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: var(--gray);
 `;
