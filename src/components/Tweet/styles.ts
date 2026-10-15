@@ -477,7 +477,7 @@ export const CommentItem = styled.div`
   }
 
   &.is-reply {
-    margin-left: 30px;
+    margin-left: 0; /* Removido o deslocamento excessivo para alinhar com o contentor */
     border-bottom: none;
   }
 `;
@@ -569,9 +569,14 @@ export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
   flex-direction: column;
   padding-left: 12px;
   border-left: 2px solid var(--outline);
-  margin-left: 18px;
-`;
+  margin-left: 20px;
 
+  & & {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 12px;
+  }
+`;
 export const CommentListLoading = styled.span`
   padding: 12px 0;
   display: block;
@@ -708,7 +713,6 @@ export const LikesModalEmpty = styled.p`
   text-align: center;
 `;
 
-
 export const RetweetWrapper = styled.div`
   position: relative;
 `;
@@ -774,10 +778,6 @@ export const QuotePreview = styled.div`
     word-break: break-word;
   }
 `;
-
-/* =====================================================================
-   CARD DE TWEET CITADO (QUOTED TWEET)
-======================================================================== */
 
 export const QuotedTweetCard = styled.div`
   margin-top: 12px;

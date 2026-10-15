@@ -24,16 +24,9 @@ import {
   NotificationBadge,
   TweetButton,
   TweetIcon,
-  ThemeIconContainer,
-  ThemeEmojiSpan,
 } from './styles';
 
-interface MenuBarProps {
-  toggleTheme: () => void;
-  currentTheme: string;
-}
-
-const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
+const MenuBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams<{ username?: string }>();
@@ -187,6 +180,11 @@ const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
     }
   };
 
+  const handleUserClick = (e: React.MouseEvent, targetUsername: string) => {
+    e.stopPropagation();
+    navigate(`/profile/${targetUsername}`);
+  };
+
   return (
     <Container>
       <Topside>
@@ -265,15 +263,6 @@ const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
           <span>Configurações</span>
         </MenuButton>
 
-        <MenuButton onClick={toggleTheme}>
-          <ThemeIconContainer>
-            <ThemeEmojiSpan>
-              {currentTheme === 'light' ? '🌙' : '☀️'}
-            </ThemeEmojiSpan>
-          </ThemeIconContainer>
-          <span>{currentTheme === 'light' ? 'Modo Claro' : 'Modo Escuro'}</span>
-        </MenuButton>
-
         {!isMessages && (
           <TweetButton onClick={() => setIsTweetModalOpen(true)}>
             <TweetIcon viewBox="0 0 24 24" aria-hidden="true">
@@ -287,8 +276,18 @@ const MenuBar: React.FC<MenuBarProps> = ({ toggleTheme, currentTheme }) => {
       </Topside>
 
       <Botside onClick={handleLogout} title="Encerrar sessão">
-        <Avatar $avatarUrl={authUser?.profile?.avatar} />
-        <ProfileData>
+        <Avatar
+          $avatarUrl={authUser?.profile?.avatar}
+          onClick={(e) =>
+            authUser?.username && handleUserClick(e, authUser.username)
+          }
+        />
+        <ProfileData
+          onClick={(e) =>
+            authUser?.username && handleUserClick(e, authUser.username)
+          }
+          style={{ cursor: 'pointer' }}
+        >
           <strong>
             {authUser?.first_name || authUser?.username || 'Utilizador'}
           </strong>

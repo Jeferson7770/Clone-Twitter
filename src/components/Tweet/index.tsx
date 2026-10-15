@@ -132,7 +132,11 @@ interface TweetProps {
 const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const retweetMenuRef = useRef<HTMLDivElement>(null);
+  const commentMenuRef = useRef<HTMLDivElement>(null);
+  const commentSectionRef = useRef<HTMLDivElement>(null);
 
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -152,6 +156,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [loadingQuote, setLoadingQuote] = useState(false);
+
+  const [showCommentMenu, setShowCommentMenu] = useState(false);
 
   const [isRetweetsModalOpen, setIsRetweetsModalOpen] = useState(false);
   const [retweetedByUsers, setRetweetedByUsers] = useState<ILikedUser[]>([]);
@@ -177,12 +183,31 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const isOwner = user?.username === tweet.author.username;
 
+  // Fechar menus e a secção de respostas ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (
+        showRetweetMenu &&
+        retweetMenuRef.current &&
+        !retweetMenuRef.current.contains(target)
+      ) {
+        setShowRetweetMenu(false);
+      }
+      if (
+        showCommentMenu &&
+        commentMenuRef.current &&
+        !commentMenuRef.current.contains(target)
+      ) {
+        setShowCommentMenu(false);
+      }
       if (
         isCommentSectionOpen &&
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        commentSectionRef.current &&
+        !commentSectionRef.current.contains(target) &&
+        commentMenuRef.current &&
+        !commentMenuRef.current.contains(target)
       ) {
         setIsCommentSectionOpen(false);
       }
@@ -192,7 +217,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isCommentSectionOpen]);
+  }, [showRetweetMenu, showCommentMenu, isCommentSectionOpen]);
 
   if (tweet.comments !== prevTweetComments) {
     setPrevTweetComments(tweet.comments);
@@ -355,7 +380,22 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const handleRetweetMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowCommentMenu(false);
     setShowRetweetMenu(!showRetweetMenu);
+  };
+
+  const handleCommentMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowRetweetMenu(false);
+    setShowCommentMenu(!showCommentMenu);
+  };
+
+  const handleStandardCommentOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCommentMenu(false);
+    const willOpen = !isCommentSectionOpen;
+    setIsCommentSectionOpen(willOpen);
+    if (willOpen && comments.length === 0 && commentsCount > 0) fetchComments();
   };
 
   const handleStandardRetweet = async (e: React.MouseEvent) => {
@@ -500,13 +540,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     }
   };
 
-  const handleToggleComments = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const willOpen = !isCommentSectionOpen;
-    setIsCommentSectionOpen(willOpen);
-    if (willOpen && comments.length === 0 && commentsCount > 0) fetchComments();
-  };
-
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
@@ -593,6 +626,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       : `${baseURL}${avatarPath}`;
   };
 
+  // Renderização unificada da árvore de comentários sem acumular identações em cascata
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
     return commentList.map((comment, index) => (
       <React.Fragment key={`${comment.id}-${index}`}>
@@ -645,7 +679,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
           </CommentContentContainer>
         </CommentItem>
         {comment.replies && comment.replies.length > 0 && (
-          <NestedRepliesContainer $isNested={isNested}>
+          <NestedRepliesContainer $isNested={true}>
             {renderCommentTree(comment.replies, true)}
           </NestedRepliesContainer>
         )}
@@ -654,7 +688,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   };
 
   return (
-    <Container ref={containerRef} onClick={() => setShowRetweetMenu(false)}>
+    <Container ref={containerRef}>
       {tweet.isRetweet && (
         <Retweeted>
           <Icon />
@@ -776,12 +810,28 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
           )}
 
           <Icons>
-            <Status onClick={handleToggleComments}>
-              <CommentIcon />
-              {commentsCount}
-            </Status>
+            <RetweetWrapper ref={commentMenuRef}>
+              <Status
+                onClick={handleCommentMenuClick}
+                className={isCommentSectionOpen ? 'active-retweet' : ''}
+              >
+                <CommentIcon />
+                <span title="Opções de resposta">{commentsCount}</span>
+              </Status>
 
-            <RetweetWrapper>
+              {showCommentMenu && (
+                <RetweetDropdown>
+                  <DropdownItem onClick={handleStandardCommentOpen}>
+                    Responder
+                  </DropdownItem>
+                  <DropdownItem onClick={handleStandardCommentOpen}>
+                    Ver todas as respostas
+                  </DropdownItem>
+                </RetweetDropdown>
+              )}
+            </RetweetWrapper>
+
+            <RetweetWrapper ref={retweetMenuRef}>
               <Status
                 onClick={handleRetweetMenuClick}
                 className={isRetweeted ? 'active-retweet' : ''}
@@ -822,11 +872,9 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         </Content>
       </Body>
 
+      {/* Secção de Respostas com fecho automático ao clicar fora via commentSectionRef */}
       {isCommentSectionOpen && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{ position: 'relative' }}
-        >
+        <div ref={commentSectionRef} style={{ position: 'relative' }}>
           <CommentHeaderBar>
             <CommentHeaderTitle>Respostas</CommentHeaderTitle>
             <CloseCommentsButton
@@ -843,7 +891,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
               <CommentsList>
                 {loadingCommentsList ? (
                   <CommentListLoading>
-                    Carregando comentários...
+                    A carregar comentários...
                   </CommentListLoading>
                 ) : comments.length > 0 ? (
                   <>
@@ -861,7 +909,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   </>
                 ) : (
                   <CommentListEmpty>
-                    Nenhum comentário ainda. Seja o primeiro!
+                    Ainda sem comentários. Seja o primeiro!
                   </CommentListEmpty>
                 )}
               </CommentsList>
@@ -872,7 +920,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
             {replyingTo && (
               <ReplyIndicator>
                 <span>
-                  Respondendo a <strong>@{replyingTo.username}</strong>
+                  A responder a <strong>@{replyingTo.username}</strong>
                 </span>
                 <CancelReplyButton
                   type="button"
@@ -888,8 +936,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 rows={2}
                 placeholder={
                   replyingTo
-                    ? 'Escreva sua resposta...'
-                    : 'Postar sua resposta...'
+                    ? 'Escreva a sua resposta...'
+                    : 'Publique a sua resposta...'
                 }
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
@@ -899,7 +947,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   type="submit"
                   disabled={loadingComment || !commentText.trim()}
                 >
-                  {loadingComment ? 'Enviando...' : 'Postar'}
+                  {loadingComment ? 'A enviar...' : 'Responder'}
                 </button>
               </CommentActions>
             </CommentForm>
@@ -953,7 +1001,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                     type="submit"
                     disabled={loadingQuote || !quoteText.trim()}
                   >
-                    {loadingQuote ? 'Enviando...' : 'Postar'}
+                    {loadingQuote ? 'A enviar...' : 'Postar'}
                   </button>
                 </CommentActions>
               </CommentForm>
@@ -977,7 +1025,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
             <LikesList>
               {loadingRetweetedBy ? (
-                <LikesModalLoading>Carregando...</LikesModalLoading>
+                <LikesModalLoading>A carregar...</LikesModalLoading>
               ) : retweetedByUsers && retweetedByUsers.length > 0 ? (
                 retweetedByUsers.map((retweetUser, index) => {
                   const isMe = user?.username === retweetUser.username;
@@ -987,7 +1035,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsRetweetsModalOpen(false);
-                        navigate(`/${retweetUser.username}`);
+                        navigate(`/profile/${retweetUser.username}`);
                       }}
                     >
                       <LikeUserInner>
@@ -1038,7 +1086,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
             <LikesList>
               {loadingLikedBy ? (
-                <LikesModalLoading>Carregando...</LikesModalLoading>
+                <LikesModalLoading>A carregar...</LikesModalLoading>
               ) : likedByUsers && likedByUsers.length > 0 ? (
                 likedByUsers.map((likedUser, index) => {
                   const isMe = user?.username === likedUser.username;
@@ -1048,7 +1096,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsLikesModalOpen(false);
-                        navigate(`/${likedUser.username}`);
+                        navigate(`/profile/${likedUser.username}`);
                       }}
                     >
                       <LikeUserInner>
