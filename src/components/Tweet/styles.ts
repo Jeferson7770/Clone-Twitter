@@ -389,8 +389,15 @@ export const CommentScrollArea = styled.div`
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 350px;
   padding: 0 16px;
+
+  /* Oculta a barra de rolagem em todos os navegadores */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 export const CommentFormArea = styled.div`
@@ -477,7 +484,7 @@ export const CommentItem = styled.div`
   }
 
   &.is-reply {
-    margin-left: 0; /* Removido o deslocamento excessivo para alinhar com o contentor */
+    margin-left: 0;
     border-bottom: none;
   }
 `;
@@ -567,16 +574,18 @@ export const LikeCountSpan = styled.span`
 export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
   display: flex;
   flex-direction: column;
-  padding-left: 12px;
-  border-left: 2px solid var(--outline);
   margin-left: 20px;
+  padding-left: 0;
+  border-left: none;
+  margin-top: 4px;
 
   & & {
-    border-left: none;
     margin-left: 0;
-    padding-left: 12px;
+    padding-left: 0;
+    border-left: none;
   }
 `;
+
 export const CommentListLoading = styled.span`
   padding: 12px 0;
   display: block;
@@ -621,6 +630,13 @@ export const LikesList = styled.div`
   flex-direction: column;
   overflow-y: auto;
   max-height: calc(80vh - 53px);
+
+  /* Oculta a barra de rolagem no modal de likes */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 export const LikeUserItem = styled.div`
