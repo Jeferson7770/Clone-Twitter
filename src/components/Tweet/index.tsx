@@ -552,6 +552,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       setCommentsCount((prev) => prev + 1);
       setCommentText('');
       setReplyingTo(null);
+      setIsCommentSectionOpen(false); // Fecha a área de comentários após enviar com sucesso
       fetchComments();
       if (onUpdate) onUpdate();
     } catch (error) {
@@ -626,7 +627,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       : `${baseURL}${avatarPath}`;
   };
 
-  // Renderização unificada da árvore de comentários sem acumular identações em cascata
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
     return commentList.map((comment, index) => (
       <React.Fragment key={`${comment.id}-${index}`}>
@@ -872,7 +872,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         </Content>
       </Body>
 
-      {/* Secção de Respostas com fecho automático ao clicar fora via commentSectionRef */}
       {isCommentSectionOpen && (
         <div ref={commentSectionRef} style={{ position: 'relative' }}>
           <CommentHeaderBar>
@@ -1034,7 +1033,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       key={`${retweetUser.id}-${index}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsRetweetsModalOpen(false);
                         navigate(`/profile/${retweetUser.username}`);
                       }}
                     >
@@ -1051,7 +1049,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
-                          type="button"
                           className={
                             retweetUser.is_following ? 'following' : 'follow'
                           }
@@ -1064,7 +1061,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   );
                 })
               ) : (
-                <LikesModalEmpty>Nenhum retweet ainda.</LikesModalEmpty>
+                <LikesModalEmpty>Ninguém retuitou ainda.</LikesModalEmpty>
               )}
             </LikesList>
           </LikesModalContainer>
@@ -1095,7 +1092,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       key={`${likedUser.id}-${index}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsLikesModalOpen(false);
                         navigate(`/profile/${likedUser.username}`);
                       }}
                     >
@@ -1112,7 +1108,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
-                          type="button"
                           className={
                             likedUser.is_following ? 'following' : 'follow'
                           }

@@ -288,7 +288,7 @@ export const CommentHeaderTitle = styled.span`
 export const CloseCommentsButton = styled.button`
   background: none;
   border: none;
-  color: var(--white);
+  color: var(--white); /* Ícone 'X' em branco */
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
@@ -302,7 +302,7 @@ export const CloseCommentsButton = styled.button`
 export const CancelReplyButton = styled.button`
   background: none;
   border: none;
-  color: var(--twitter);
+  color: var(--white); /* Ícone 'X' em branco */
   font-size: 14px;
   cursor: pointer;
   font-weight: bold;
