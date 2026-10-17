@@ -26,7 +26,13 @@ import {
   TweetIcon,
 } from './styles';
 
-const MenuBar: React.FC = () => {
+interface MenuBarProps {
+  toggleTheme: () => void;
+  currentTheme: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const MenuBar: React.FC<MenuBarProps> = (_props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams<{ username?: string }>();
