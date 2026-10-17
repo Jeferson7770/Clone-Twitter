@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Feed from '../Feed';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
@@ -13,6 +13,10 @@ import {
   CakeIcon,
   Followage,
   EditButton,
+  ActionButtons,
+  MessageButton,
+  MessageIcon,
+  ToastNotification,
   ModalOverlay,
   ModalContainer,
   ModalHeader,
@@ -48,6 +52,7 @@ interface IProfileUser {
 const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username?: string }>();
   const { user: authUser, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const [externalUser, setExternalUser] = useState<IProfileUser | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -67,6 +72,7 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const [isFollowing, setIsFollowing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,6 +184,19 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleMessageClick = () => {
+    if (!isFollowing) {
+      setToastMessage(
+        'Você precisa seguir este usuário para poder enviar mensagens.'
+      );
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+      return;
+    }
+    navigate(`/messages?user=${displayUser?.username}`);
+  };
+
   const formattedBirthDate = displayUser?.profile?.birth_date
     ? new Date(displayUser.profile.birth_date).toLocaleDateString('pt-BR', {
         timeZone: 'UTC',
@@ -199,6 +218,8 @@ const ProfilePage: React.FC = () => {
 
   return (
     <Container>
+      {toastMessage && <ToastNotification>{toastMessage}</ToastNotification>}
+
       <Banner>
         <Avatar
           onClick={() =>
@@ -223,9 +244,18 @@ const ProfilePage: React.FC = () => {
             Editar perfil
           </EditButton>
         ) : (
-          <EditButton $outlined={!isFollowing} onClick={handleToggleFollow}>
-            {isFollowing ? 'Seguindo' : 'Seguir'}
-          </EditButton>
+          <ActionButtons>
+            <EditButton $outlined={!isFollowing} onClick={handleToggleFollow}>
+              {isFollowing ? 'Seguindo' : 'Seguir'}
+            </EditButton>
+            <MessageButton
+              type="button"
+              title="Enviar mensagem"
+              onClick={handleMessageClick}
+            >
+              <MessageIcon />
+            </MessageButton>
+          </ActionButtons>
         )}
 
         <h1>{displayUser?.first_name || displayUser?.username || 'Usuário'}</h1>

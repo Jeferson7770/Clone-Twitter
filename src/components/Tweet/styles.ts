@@ -89,7 +89,14 @@ export const HeaderInfo = styled.div`
     }
   }
 
-  > span,
+  > span {
+    color: var(--twitter);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   time {
     color: var(--gray);
     font-size: 14px;
@@ -288,7 +295,7 @@ export const CommentHeaderTitle = styled.span`
 export const CloseCommentsButton = styled.button`
   background: none;
   border: none;
-  color: var(--white); /* Ícone 'X' em branco */
+  color: var(--white);
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
@@ -302,7 +309,7 @@ export const CloseCommentsButton = styled.button`
 export const CancelReplyButton = styled.button`
   background: none;
   border: none;
-  color: var(--white); /* Ícone 'X' em branco */
+  color: var(--white);
   font-size: 14px;
   cursor: pointer;
   font-weight: bold;
@@ -332,7 +339,7 @@ export const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(91, 112, 131, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,7 +399,6 @@ export const CommentScrollArea = styled.div`
   max-height: 350px;
   padding: 0 16px;
 
-  /* Oculta a barra de rolagem em todos os navegadores */
   &::-webkit-scrollbar {
     display: none;
   }
@@ -537,7 +543,7 @@ export const CommentAuthorContainer = styled.div`
 
   span {
     font-size: 13px;
-    color: var(--gray);
+    color: var(--twitter);
   }
 `;
 
@@ -623,6 +629,10 @@ export const ReplyIndicator = styled.div`
   margin-bottom: 8px;
   font-size: 13px;
   color: var(--gray);
+
+  strong {
+    color: var(--twitter);
+  }
 `;
 
 export const LikesList = styled.div`
@@ -631,7 +641,6 @@ export const LikesList = styled.div`
   overflow-y: auto;
   max-height: calc(80vh - 53px);
 
-  /* Oculta a barra de rolagem no modal de likes */
   &::-webkit-scrollbar {
     display: none;
   }
@@ -713,7 +722,7 @@ export const LikeUserInfo = styled.div`
 
   span {
     font-size: 14px;
-    color: var(--gray);
+    color: var(--twitter);
   }
 `;
 
@@ -782,7 +791,7 @@ export const QuotePreview = styled.div`
 
     span {
       font-weight: normal;
-      color: var(--gray);
+      color: var(--twitter);
     }
   }
 
@@ -829,7 +838,7 @@ export const QuotedHeader = styled.div`
   }
 
   span {
-    color: var(--gray);
+    color: var(--twitter);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -857,4 +866,77 @@ export const QuotedContent = styled.p`
   color: var(--white);
   line-height: 20px;
   word-break: break-word;
+`;
+
+/* Modal de exclusão com cores e layout ajustados */
+
+export const DeleteModalCard = styled.div`
+  background: var(--primary);
+  color: var(--white);
+  width: 100%;
+  max-width: 460px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--outline);
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--white);
+  }
+
+  p {
+    font-size: 15px;
+    color: var(--gray);
+    margin-bottom: 24px;
+    line-height: 22px;
+  }
+`;
+
+export const DeleteModalRowActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+
+  button.confirm-btn {
+    background-color: #f4212e;
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 8px 24px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #d91b26;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  button.cancel-btn {
+    background-color: #eff3f4;
+    color: #0f1419;
+    border: none;
+    border-radius: 9999px;
+    padding: 8px 20px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #d7dbdc;
+    }
+  }
 `;

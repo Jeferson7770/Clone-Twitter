@@ -68,6 +68,8 @@ import {
   CancelReplyButton,
   RetweetCountSpan,
   TrashIconSpan,
+  DeleteModalCard,
+  DeleteModalRowActions,
 } from './styles';
 
 export interface IComment {
@@ -140,6 +142,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [likesCount, setLikesCount] = useState(tweet.likes_count || 0);
   const [isLiked, setIsLiked] = useState(tweet.is_liked || false);
@@ -183,7 +186,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const isOwner = user?.username === tweet.author.username;
 
-  // Fechar menus e a secção de respostas ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -231,13 +233,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const userConfirmed = window.confirm(
-      'Excluir Tweet?\n\nIsso não pode ser desfeito e ele será removido do seu perfil, da timeline das contas que seguem você e dos resultados de busca.'
-    );
-
-    if (userConfirmed) {
-      confirmDelete();
-    }
+    setIsDeleteModalOpen(true);
   };
 
   const handleSuccessfulDelete = () => {
@@ -269,6 +265,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       }
     } finally {
       setIsDeleting(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -277,10 +274,10 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     commentId: number | string
   ) => {
     e.stopPropagation();
-    const confirmDelete = window.confirm(
+    const confirmDeleteComment = window.confirm(
       'Excluir este comentário?\n\nIsso não pode ser desfeito.'
     );
-    if (!confirmDelete) return;
+    if (!confirmDeleteComment) return;
 
     try {
       await api.delete(`comments/${commentId}/`);
@@ -552,7 +549,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       setCommentsCount((prev) => prev + 1);
       setCommentText('');
       setReplyingTo(null);
-      setIsCommentSectionOpen(false); // Fecha a área de comentários após enviar com sucesso
+      setIsCommentSectionOpen(false);
       fetchComments();
       if (onUpdate) onUpdate();
     } catch (error) {
@@ -872,6 +869,43 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         </Content>
       </Body>
 
+      {/* Modal de Confirmação atualizado */}
+      {isDeleteModalOpen && (
+        <ModalOverlay
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDeleteModalOpen(false);
+          }}
+        >
+          <DeleteModalCard onClick={(e) => e.stopPropagation()}>
+            <h3>Excluir Tweet?</h3>
+            <p>
+              Isso não pode ser desfeito e ele será removido do seu perfil, da
+              timeline das contas que seguem você e dos resultados de busca.
+            </p>
+
+            <DeleteModalRowActions>
+              <button
+                type="button"
+                className="confirm-btn"
+                disabled={isDeleting}
+                onClick={confirmDelete}
+              >
+                {isDeleting ? 'A excluir...' : 'Excluir'}
+              </button>
+
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Cancelar
+              </button>
+            </DeleteModalRowActions>
+          </DeleteModalCard>
+        </ModalOverlay>
+      )}
+
       {isCommentSectionOpen && (
         <div ref={commentSectionRef} style={{ position: 'relative' }}>
           <CommentHeaderBar>
@@ -1031,10 +1065,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   return (
                     <LikeUserItem
                       key={`${retweetUser.id}-${index}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/profile/${retweetUser.username}`);
-                      }}
+                      onClick={(e) => handleUserClick(e, retweetUser.username)}
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
@@ -1049,6 +1080,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
+                          type="button"
                           className={
                             retweetUser.is_following ? 'following' : 'follow'
                           }
@@ -1061,7 +1093,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   );
                 })
               ) : (
-                <LikesModalEmpty>Ninguém retuitou ainda.</LikesModalEmpty>
+                <LikesModalEmpty>Nenhum retweet ainda.</LikesModalEmpty>
               )}
             </LikesList>
           </LikesModalContainer>
@@ -1090,10 +1122,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   return (
                     <LikeUserItem
                       key={`${likedUser.id}-${index}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/profile/${likedUser.username}`);
-                      }}
+                      onClick={(e) => handleUserClick(e, likedUser.username)}
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
@@ -1108,6 +1137,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
+                          type="button"
                           className={
                             likedUser.is_following ? 'following' : 'follow'
                           }

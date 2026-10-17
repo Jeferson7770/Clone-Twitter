@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import { LocationOn, Cake, ArrowLeft } from '../../styles/Icons';
 import Button from '../Button';
+import { Email, CameraAlt } from '../../styles/Icons';
 
 export const Container = styled.div`
   display: flex;
@@ -12,7 +13,6 @@ export const Container = styled.div`
     display: none;
   }
 `;
-
 
 export const Header = styled.div`
   z-index: 2;
@@ -32,7 +32,7 @@ export const BackIcon = styled(ArrowLeft)`
   height: 24px;
   fill: var(--twitter);
   margin-right: 15px;
-  padding: 4px; 
+  padding: 4px;
 
   &:hover {
     background: var(--twitter-dark-hover);
@@ -51,10 +51,9 @@ export const ProfileInfo = styled.div`
 
   > span {
     font-size: 15px;
-    color: var(--gray);
+    color: var(--twitter);
   }
 `;
-
 
 export const Banner = styled.div`
   flex-shrink: 0;
@@ -90,7 +89,7 @@ export const ProfileData = styled.div`
   > h2 {
     font-weight: normal;
     font-size: 15px;
-    color: var(--gray);
+    color: var(--twitter);
   }
 
   > p {
@@ -158,10 +157,12 @@ export const Followage = styled.div`
 
 export const EditButton = styled(Button)<{ $outlined?: boolean }>`
   position: absolute;
-  top: 2vw;
-  right: 7px;
-  padding: 4px 16px;
-  font-size: 13px;
+  top: 10px;
+  right: 16px;
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 9999px;
 
   background: ${(props) =>
     props.$outlined ? 'transparent' : 'var(--twitter)'};
@@ -174,12 +175,67 @@ export const EditButton = styled(Button)<{ $outlined?: boolean }>`
         ? 'rgba(29, 161, 242, 0.1)'
         : 'var(--twitter-dark-hover, #1a91da)'};
   }
+`;
 
-  @media (min-width: 320px) {
-    top: 10px;
-    padding: 10px 19px;
-    font-size: 15px;
+export const ActionButtons = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* Quando o EditButton estiver dentro do ActionButtons, removemos a posição absoluta */
+  ${EditButton} {
+    position: relative;
+    top: auto;
+    right: auto;
   }
+`;
+
+export const MessageIcon = styled(Email)`
+  width: 18px;
+  height: 18px;
+  color: var(--white);
+`;
+
+export const MessageButton = styled.button`
+  background: transparent;
+  border: 1px solid var(--twitter);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(29, 161, 242, 0.1);
+  }
+
+  ${MessageIcon} {
+    color: var(--twitter);
+  }
+`;
+
+export const ToastNotification = styled.div`
+  position: sticky;
+  top: 10px;
+  margin: 10px auto;
+  width: fit-content;
+  max-width: 90%;
+  background-color: var(--twitter);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  text-align: center;
 `;
 
 export const ModalOverlay = styled.div`
@@ -308,11 +364,11 @@ export const AvatarUploadButton = styled.div`
   }
 `;
 
-export const CameraIcon = styled.span`
-  &::after {
-    content: '📷';
-    font-size: 16px;
-  }
+export const CameraIcon = styled(CameraAlt)`
+  width: 22px;
+  height: 22px;
+  color: var(--white);
+  fill: var(--white);
 `;
 
 export const InputGroup = styled.div`

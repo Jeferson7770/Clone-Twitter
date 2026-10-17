@@ -7,8 +7,9 @@ export {
   LocationOn,
   Search,
   Settings,
-  LightMode, 
+  LightMode,
   DarkMode,
+  CameraAlt,
 } from 'styled-icons/material-outlined';
 
 export { Person, Cake, Favorite } from 'styled-icons/material';
