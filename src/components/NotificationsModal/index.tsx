@@ -9,6 +9,7 @@ import {
   CloseButton,
   ScrollableContent,
   NotificationItem,
+  UnreadDot,
   IconArea,
   ContentArea,
   UserAvatar,
@@ -47,6 +48,10 @@ export interface Notification {
   content?: string;
   tweet?: string | number | null;
   tweet_id?: string | number | null;
+  comment?: string | number | null;
+  comment_id?: string | number | null;
+  object_id?: string | number | null;
+  target_id?: string | number | null;
   is_read?: boolean;
 }
 
@@ -103,6 +108,11 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
   const handleNotificationClick = (notif: Notification) => {
     const targetTweetId = notif.tweet_id || notif.tweet;
+
+    // Captura o ID correto do comentário vindo do backend
+    const targetCommentId =
+      notif.comment_id || notif.comment || notif.object_id || notif.target_id;
+
     const actorUsername = notif.user?.username || notif.actor?.username;
 
     onClose();
@@ -110,7 +120,13 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     if (notif.type === 'follow' && actorUsername) {
       navigate(`/profile/${actorUsername}`);
     } else if (targetTweetId) {
-      navigate(`/status/${targetTweetId}`);
+      if (notif.type === 'comment' && targetCommentId) {
+        navigate(`/status/${targetTweetId}`, {
+          state: { highlightCommentId: targetCommentId },
+        });
+      } else {
+        navigate(`/status/${targetTweetId}`);
+      }
     } else if (actorUsername) {
       navigate(`/profile/${actorUsername}`);
     }
@@ -166,11 +182,16 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                 notif.actor?.profile?.avatar ||
                 '/default-avatar.png';
 
+              const isUnread = notif.is_read === false;
+
               return (
                 <NotificationItem
                   key={`${notif.id}-${index}`}
                   onClick={() => handleNotificationClick(notif)}
+                  $isUnread={isUnread}
                 >
+                  {isUnread && <UnreadDot />}
+
                   <IconArea>{renderIcon(notif.type)}</IconArea>
                   <ContentArea>
                     <UserAvatar
@@ -206,7 +227,7 @@ function getNotificationText(type: string): string {
     case 'like':
       return 'curtiu o seu tweet.';
     case 'comment':
-      return 'comentou no seu tweet.';
+      return 'respondeu ao seu tweet.';
     case 'retweet':
       return 'retweetou o seu tweet.';
     case 'follow':

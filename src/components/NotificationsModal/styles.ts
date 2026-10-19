@@ -76,16 +76,30 @@ export const ScrollableContent = styled.div`
   }
 `;
 
-export const NotificationItem = styled.div`
+export const NotificationItem = styled.div<{ $isUnread?: boolean }>`
   display: flex;
   padding: 16px;
   border-bottom: 1px solid var(--outline);
   cursor: pointer;
   transition: background 0.2s;
+  position: relative;
+  background-color: ${(props) =>
+    props.$isUnread ? 'rgba(29, 155, 240, 0.06)' : 'transparent'};
 
   &:hover {
     background: rgba(128, 128, 128, 0.1);
   }
+`;
+
+export const UnreadDot = styled.div`
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background-color: var(--twitter, #1d9bf0);
+  border-radius: 50%;
 `;
 
 export const IconArea = styled.div`

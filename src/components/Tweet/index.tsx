@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 
@@ -27,8 +27,6 @@ import {
   RetweetIcon,
   LikeIcon,
   CommentSection,
-  CommentForm,
-  CommentActions,
   CommentsList,
   CommentItem,
   CommentAvatar,
@@ -40,12 +38,10 @@ import {
   LikeUserItem,
   LikeUserAvatar,
   LikeUserInfo,
-  ReplyIndicator,
   CommentListLoading,
   CommentListEmpty,
   LoadMoreButton,
   CommentScrollArea,
-  CommentFormArea,
   CommentItemActions,
   ActionWrapper,
   LikeCountSpan,
@@ -62,14 +58,21 @@ import {
   QuotedAvatar,
   QuotedContent,
   CommentAuthorContainer,
-  CommentHeaderBar,
-  CommentHeaderTitle,
-  CloseCommentsButton,
-  CancelReplyButton,
-  RetweetCountSpan,
   TrashIconSpan,
   DeleteModalCard,
+  DeleteModalText,
   DeleteModalRowActions,
+  ReplyModalContainer,
+  ReplyModalHeader,
+  ReplyModalBody,
+  ReplyTweetParent,
+  ReplyThreadLine,
+  ReplyFormContainer,
+  ReplyReplyingToText,
+  ReplySubmitButton,
+  ReplyingToTag,
+  ToggleRepliesButton,
+  RetweetCountSpan,
 } from './styles';
 
 export interface IComment {
@@ -88,6 +91,8 @@ export interface IComment {
   replies_count?: number;
   replies?: IComment[];
   parent?: number | string | null;
+  media?: string | null;
+  media_type?: 'image' | 'video';
 }
 
 export interface ILikedUser {
@@ -133,7 +138,12 @@ interface TweetProps {
 
 const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser } = useAuth();
+
+  const locationState = location.state as {
+    highlightCommentId?: string | number;
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const retweetMenuRef = useRef<HTMLDivElement>(null);
@@ -174,15 +184,115 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     tweet.comments_count
   );
 
-  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
+  // Derivação de estado para evitar chamadas de setState síncronas dentro de useEffects
+  const hasNotificationHighlight = Boolean(locationState?.highlightCommentId);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [extraVisibleCount, setExtraVisibleCount] = useState(0);
+
+  const isCommentSectionOpen = hasNotificationHighlight || manualOpen;
+  const visibleCommentsCount =
+    (hasNotificationHighlight ? 100 : 3) + extraVisibleCount;
+
+  const [highlightedCommentId] = useState<number | string | null>(
+    locationState?.highlightCommentId ?? null
+  );
+
+  const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [loadingComment, setLoadingComment] = useState(false);
   const [loadingCommentsList, setLoadingCommentsList] = useState(false);
-  const [visibleCommentsCount, setVisibleCommentsCount] = useState(3);
-  const [replyingTo, setReplyingTo] = useState<{
-    id: number | string;
-    username: string;
-  } | null>(null);
+
+  const [replyingTo, setReplyingTo] = useState<IComment | null>(null);
+  const [expandedComments, setExpandedComments] = useState<
+    Record<string | number, boolean>
+  >({});
+
+  const fetchComments = useCallback(async () => {
+    setLoadingCommentsList(true);
+    try {
+      const response = await api.get(`tweets/${tweet.id}/`);
+      if (response.data && response.data.comments) {
+        setComments(response.data.comments);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar comentários:', error);
+    } finally {
+      setLoadingCommentsList(false);
+    }
+  }, [tweet.id]);
+
+  // Efeito unificado para carregar dados, expandir pais recursivamente e executar scroll
+  useEffect(() => {
+    const commentId = locationState?.highlightCommentId;
+    if (!commentId) return;
+
+    if (comments.length === 0 && commentsCount > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchComments();
+      return;
+    }
+
+    const findParentsToExpand = (
+      list: IComment[],
+      targetId: string | number,
+      parents: (string | number)[] = []
+    ): (string | number)[] | null => {
+      for (const item of list) {
+        if (String(item.id) === String(targetId)) {
+          return parents;
+        }
+        if (item.replies && item.replies.length > 0) {
+          const result = findParentsToExpand(item.replies, targetId, [
+            ...parents,
+            item.id,
+          ]);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    const parentsToExpand = findParentsToExpand(comments, commentId);
+
+    if (parentsToExpand && parentsToExpand.length > 0) {
+      setExpandedComments((prev) => {
+        const nextState = { ...prev };
+        parentsToExpand.forEach((pId) => {
+          nextState[pId] = true;
+        });
+        return nextState;
+      });
+    }
+
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    const tryScroll = () => {
+      const element = document.getElementById(`comment-${commentId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(tryScroll, 100);
+      }
+    };
+
+    const timer = setTimeout(tryScroll, 200);
+
+    return () => clearTimeout(timer);
+  }, [
+    locationState?.highlightCommentId,
+    comments,
+    commentsCount,
+    fetchComments,
+  ]);
+
+  const toggleShowReplies = (commentId: string | number) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
 
   const isOwner = user?.username === tweet.author.username;
 
@@ -211,7 +321,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         commentMenuRef.current &&
         !commentMenuRef.current.contains(target)
       ) {
-        setIsCommentSectionOpen(false);
+        setManualOpen(false);
       }
     };
 
@@ -261,7 +371,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         handleSuccessfulDelete();
       } else {
         console.error('Erro ao deletar tweet:', error);
-        alert('Não foi possível deletar o tweet.');
       }
     } finally {
       setIsDeleting(false);
@@ -297,7 +406,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao deletar comentário:', error);
-      alert('Não foi possível deletar o comentário.');
     }
   };
 
@@ -371,7 +479,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
       }
     } catch (error) {
       console.error('Erro ao seguir/deixar de seguir:', error);
-      alert('Não foi possível realizar esta ação no momento.');
     }
   };
 
@@ -387,11 +494,18 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     setShowCommentMenu(!showCommentMenu);
   };
 
-  const handleStandardCommentOpen = (e: React.MouseEvent) => {
+  const handleOpenReplyModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCommentMenu(false);
+    setReplyingTo(null);
+    setIsReplyModalOpen(true);
+  };
+
+  const handleOpenAllComments = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowCommentMenu(false);
     const willOpen = !isCommentSectionOpen;
-    setIsCommentSectionOpen(willOpen);
+    setManualOpen(willOpen);
     if (willOpen && comments.length === 0 && commentsCount > 0) fetchComments();
   };
 
@@ -524,19 +638,6 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
     }
   };
 
-  const fetchComments = async () => {
-    setLoadingCommentsList(true);
-    try {
-      const response = await api.get(`tweets/${tweet.id}/`);
-      if (response.data && response.data.comments)
-        setComments(response.data.comments);
-    } catch (error) {
-      console.error('Erro ao buscar comentários:', error);
-    } finally {
-      setLoadingCommentsList(false);
-    }
-  };
-
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
@@ -546,11 +647,21 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         content: commentText.trim(),
         parent: replyingTo?.id || null,
       });
+
+      if (replyingTo?.id) {
+        setExpandedComments((prev) => ({
+          ...prev,
+          [replyingTo.id]: true,
+        }));
+      }
+
       setCommentsCount((prev) => prev + 1);
       setCommentText('');
       setReplyingTo(null);
-      setIsCommentSectionOpen(false);
-      fetchComments();
+      setIsReplyModalOpen(false);
+      setManualOpen(true);
+
+      await fetchComments();
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao comentar:', error);
@@ -597,7 +708,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
   const handleReplyClick = (e: React.MouseEvent, comment: IComment) => {
     e.stopPropagation();
-    setReplyingTo({ id: comment.id, username: comment.author.username });
+    setReplyingTo(comment);
+    setIsReplyModalOpen(true);
   };
 
   const handleUserClick = (e: React.MouseEvent, username: string) => {
@@ -625,63 +737,98 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
   };
 
   const renderCommentTree = (commentList: IComment[], isNested = false) => {
-    return commentList.map((comment, index) => (
-      <React.Fragment key={`${comment.id}-${index}`}>
-        <CommentItem className={isNested ? 'is-reply' : ''}>
-          <CommentAvatar
-            $avatarUrl={getAvatarUrl(comment.author.profile?.avatar)}
-            onClick={(e) => handleUserClick(e, comment.author.username)}
-          />
-          <CommentContentContainer>
-            <CommentAuthorContainer
+    return commentList.map((comment, index) => {
+      const hasReplies = comment.replies && comment.replies.length > 0;
+      const isExpanded = expandedComments[comment.id];
+      const isHighlighted = String(highlightedCommentId) === String(comment.id);
+
+      return (
+        <React.Fragment key={`${comment.id}-${index}`}>
+          <CommentItem
+            id={`comment-${comment.id}`}
+            className={isNested ? 'is-reply' : ''}
+            $isHighlighted={isHighlighted}
+          >
+            <CommentAvatar
+              $avatarUrl={getAvatarUrl(comment.author.profile?.avatar)}
               onClick={(e) => handleUserClick(e, comment.author.username)}
-            >
-              <strong>
-                {comment.author.first_name || comment.author.username}
-              </strong>
-              <span>@{comment.author.username}</span>
-            </CommentAuthorContainer>
-            <p>{comment.content}</p>
-            <CommentItemActions>
-              <ActionWrapper
-                onClick={(e) => handleReplyClick(e, comment)}
-                title="Responder"
+            />
+            <CommentContentContainer>
+              <CommentAuthorContainer
+                onClick={(e) => handleUserClick(e, comment.author.username)}
               >
-                <CommentIcon />
-                <span>{comment.replies_count || 0}</span>
-              </ActionWrapper>
+                <strong>
+                  {comment.author.first_name || comment.author.username}
+                </strong>
+                <span>@{comment.author.username}</span>
+              </CommentAuthorContainer>
 
-              <ActionWrapper
-                onClick={(e) => handleLikeComment(e, comment.id)}
-                $isLiked={comment.is_liked}
-                title="Curtir"
-              >
-                <LikeIcon $isLiked={comment.is_liked} />
-                <LikeCountSpan
-                  onClick={(e) => handleOpenCommentLikesModal(e, comment.id)}
-                >
-                  {comment.likes_count || 0}
-                </LikeCountSpan>
-              </ActionWrapper>
-
-              {user?.username === comment.author.username && (
-                <ActionWrapper
-                  onClick={(e) => handleDeleteComment(e, comment.id)}
-                  title="Deletar Comentário"
-                >
-                  <TrashIconSpan>🗑️</TrashIconSpan>
-                </ActionWrapper>
+              {comment.parent && (
+                <ReplyingToTag>
+                  Em resposta a <span>@{comment.author.username}</span>
+                </ReplyingToTag>
               )}
-            </CommentItemActions>
-          </CommentContentContainer>
-        </CommentItem>
-        {comment.replies && comment.replies.length > 0 && (
-          <NestedRepliesContainer $isNested={true}>
-            {renderCommentTree(comment.replies, true)}
-          </NestedRepliesContainer>
-        )}
-      </React.Fragment>
-    ));
+
+              <p>{comment.content}</p>
+
+              <CommentItemActions>
+                <ActionWrapper
+                  onClick={(e) => handleReplyClick(e, comment)}
+                  $isCommented={(comment.replies_count || 0) > 0}
+                  title="Responder"
+                >
+                  <CommentIcon $hasReplies={(comment.replies_count || 0) > 0} />
+                  <span>{comment.replies_count || 0}</span>
+                </ActionWrapper>
+
+                <ActionWrapper
+                  onClick={(e) => handleLikeComment(e, comment.id)}
+                  $isLiked={comment.is_liked}
+                  title="Curtir"
+                >
+                  <LikeIcon $isLiked={comment.is_liked} />
+                  <LikeCountSpan
+                    style={{ color: comment.is_liked ? '#f91880' : 'inherit' }}
+                    onClick={(e) => handleOpenCommentLikesModal(e, comment.id)}
+                  >
+                    {comment.likes_count || 0}
+                  </LikeCountSpan>
+                </ActionWrapper>
+
+                {user?.username === comment.author.username && (
+                  <ActionWrapper
+                    onClick={(e) => handleDeleteComment(e, comment.id)}
+                    title="Deletar Comentário"
+                  >
+                    <TrashIconSpan>🗑️</TrashIconSpan>
+                  </ActionWrapper>
+                )}
+              </CommentItemActions>
+
+              {hasReplies && !isNested && (
+                <ToggleRepliesButton
+                  type="button"
+                  onClick={() => toggleShowReplies(comment.id)}
+                >
+                  <span className="line" />
+                  {isExpanded
+                    ? 'Ocultar respostas'
+                    : `Ver ${comment.replies?.length} ${
+                        comment.replies?.length === 1 ? 'resposta' : 'respostas'
+                      }`}
+                </ToggleRepliesButton>
+              )}
+            </CommentContentContainer>
+          </CommentItem>
+
+          {hasReplies && (isNested || isExpanded) && (
+            <NestedRepliesContainer $isNested={true}>
+              {renderCommentTree(comment.replies!, true)}
+            </NestedRepliesContainer>
+          )}
+        </React.Fragment>
+      );
+    });
   };
 
   return (
@@ -718,7 +865,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 title="Deletar tweet"
                 disabled={isDeleting}
               >
-                {isDeleting ? '⏳' : '🗑️'}
+                {isDeleting ? '⏳' : <TrashIconSpan>🗑️</TrashIconSpan>}
               </DeleteButton>
             )}
           </Header>
@@ -798,9 +945,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 ) : (
                   <ImageContent
                     $mediaUrl={tweet.quoted_tweet.media}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 ))}
             </QuotedTweetCard>
@@ -808,20 +953,17 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
           <Icons>
             <RetweetWrapper ref={commentMenuRef}>
-              <Status
-                onClick={handleCommentMenuClick}
-                className={isCommentSectionOpen ? 'active-retweet' : ''}
-              >
+              <Status onClick={handleCommentMenuClick}>
                 <CommentIcon />
                 <span title="Opções de resposta">{commentsCount}</span>
               </Status>
 
               {showCommentMenu && (
                 <RetweetDropdown>
-                  <DropdownItem onClick={handleStandardCommentOpen}>
+                  <DropdownItem onClick={handleOpenReplyModal}>
                     Responder
                   </DropdownItem>
-                  <DropdownItem onClick={handleStandardCommentOpen}>
+                  <DropdownItem onClick={handleOpenAllComments}>
                     Ver todas as respostas
                   </DropdownItem>
                 </RetweetDropdown>
@@ -838,6 +980,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 <RetweetCountSpan
                   onClick={handleOpenRetweetsModal}
                   title="Ver quem retuitou"
+                  style={{ color: isRetweeted ? '#00ba7c' : 'inherit' }}
                 >
                   {retweetsCount}
                 </RetweetCountSpan>
@@ -861,6 +1004,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                 onClick={handleOpenTweetLikesModal}
                 className="clickable-likes"
                 title="Ver quem curtiu"
+                style={{ color: isLiked ? '#f91880' : 'inherit' }}
               >
                 {likesCount}
               </span>
@@ -869,7 +1013,146 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         </Content>
       </Body>
 
-      {/* Modal de Confirmação atualizado */}
+      {/* SEÇÃO DE COMENTÁRIOS EXPANSÍVEL */}
+      {isCommentSectionOpen && (
+        <div ref={commentSectionRef} onClick={(e) => e.stopPropagation()}>
+          <CommentScrollArea>
+            <CommentSection>
+              <CommentsList>
+                {loadingCommentsList ? (
+                  <CommentListLoading>
+                    Carregando comentários...
+                  </CommentListLoading>
+                ) : comments.length > 0 ? (
+                  <>
+                    {renderCommentTree(comments.slice(0, visibleCommentsCount))}
+                    {comments.length > visibleCommentsCount && (
+                      <LoadMoreButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExtraVisibleCount((prev) => prev + 5);
+                        }}
+                      >
+                        Ver mais comentários...
+                      </LoadMoreButton>
+                    )}
+                  </>
+                ) : (
+                  <CommentListEmpty>
+                    Nenhum comentário ainda. Seja o primeiro!
+                  </CommentListEmpty>
+                )}
+              </CommentsList>
+            </CommentSection>
+          </CommentScrollArea>
+        </div>
+      )}
+
+      {/* MODAL DE RESPOSTA */}
+      {isReplyModalOpen &&
+        (() => {
+          const isReplyingToComment = replyingTo !== null;
+          const targetAuthor = isReplyingToComment
+            ? replyingTo.author
+            : tweet.author;
+          const targetContent = isReplyingToComment
+            ? replyingTo.content
+            : tweet.content;
+          const targetAvatar = targetAuthor.profile?.avatar;
+          const targetUsername = targetAuthor.username;
+          const targetName = targetAuthor.first_name || targetAuthor.username;
+
+          const targetMedia = isReplyingToComment
+            ? replyingTo.media
+            : tweet.media;
+          const targetMediaType = isReplyingToComment
+            ? replyingTo.media_type
+            : tweet.media_type;
+
+          return (
+            <ModalOverlay
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsReplyModalOpen(false);
+              }}
+            >
+              <ReplyModalContainer onClick={(e) => e.stopPropagation()}>
+                <ReplyModalHeader>
+                  <button
+                    type="button"
+                    onClick={() => setIsReplyModalOpen(false)}
+                    title="Fechar"
+                  >
+                    ✕
+                  </button>
+                </ReplyModalHeader>
+
+                <ReplyModalBody>
+                  <ReplyTweetParent>
+                    <div className="left-column">
+                      <Avatar $avatarUrl={getAvatarUrl(targetAvatar)} />
+                      <ReplyThreadLine />
+                    </div>
+                    <div className="right-column">
+                      <HeaderInfo>
+                        <strong>{targetName}</strong>
+                        <span>@{targetUsername}</span>
+                        {!isReplyingToComment && (
+                          <>
+                            <Dot />
+                            <time>{formattedDate}</time>
+                          </>
+                        )}
+                      </HeaderInfo>
+
+                      {targetContent && (
+                        <Description>{targetContent}</Description>
+                      )}
+
+                      {targetMedia &&
+                        (targetMediaType === 'video' ? (
+                          <VideoContent src={targetMedia} controls />
+                        ) : (
+                          <ImageContent $mediaUrl={targetMedia} />
+                        ))}
+                    </div>
+                  </ReplyTweetParent>
+
+                  <ReplyFormContainer onSubmit={handleCommentSubmit}>
+                    <div className="form-row">
+                      <Avatar
+                        $avatarUrl={getAvatarUrl(user?.profile?.avatar)}
+                      />
+                      <div className="right-column">
+                        <ReplyReplyingToText>
+                          Em resposta a <span>@{targetUsername}</span>
+                        </ReplyReplyingToText>
+
+                        <textarea
+                          rows={3}
+                          placeholder="Postar sua resposta..."
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div className="form-footer">
+                      <ReplySubmitButton
+                        type="submit"
+                        disabled={loadingComment || !commentText.trim()}
+                      >
+                        {loadingComment ? 'Enviando...' : 'Responder'}
+                      </ReplySubmitButton>
+                    </div>
+                  </ReplyFormContainer>
+                </ReplyModalBody>
+              </ReplyModalContainer>
+            </ModalOverlay>
+          );
+        })()}
+
+      {/* MODAL DE EXCLUSÃO DE TWEET */}
       {isDeleteModalOpen && (
         <ModalOverlay
           onClick={(e) => {
@@ -879,115 +1162,31 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
         >
           <DeleteModalCard onClick={(e) => e.stopPropagation()}>
             <h3>Excluir Tweet?</h3>
-            <p>
-              Isso não pode ser desfeito e ele será removido do seu perfil, da
-              timeline das contas que seguem você e dos resultados de busca.
-            </p>
-
+            <DeleteModalText>
+              Isso não pode ser desfeito. Ele será removido do seu perfil, da
+              linha do tempo de qualquer conta que segue você e dos resultados
+              de busca.
+            </DeleteModalText>
             <DeleteModalRowActions>
               <button
-                type="button"
-                className="confirm-btn"
-                disabled={isDeleting}
-                onClick={confirmDelete}
-              >
-                {isDeleting ? 'A excluir...' : 'Excluir'}
-              </button>
-
-              <button
-                type="button"
                 className="cancel-btn"
                 onClick={() => setIsDeleteModalOpen(false)}
               >
                 Cancelar
+              </button>
+              <button
+                className="confirm-btn"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Excluindo...' : 'Excluir'}
               </button>
             </DeleteModalRowActions>
           </DeleteModalCard>
         </ModalOverlay>
       )}
 
-      {isCommentSectionOpen && (
-        <div ref={commentSectionRef} style={{ position: 'relative' }}>
-          <CommentHeaderBar>
-            <CommentHeaderTitle>Respostas</CommentHeaderTitle>
-            <CloseCommentsButton
-              type="button"
-              onClick={() => setIsCommentSectionOpen(false)}
-              title="Fechar respostas"
-            >
-              ✕
-            </CloseCommentsButton>
-          </CommentHeaderBar>
-
-          <CommentScrollArea>
-            <CommentSection>
-              <CommentsList>
-                {loadingCommentsList ? (
-                  <CommentListLoading>
-                    A carregar comentários...
-                  </CommentListLoading>
-                ) : comments.length > 0 ? (
-                  <>
-                    {renderCommentTree(comments.slice(0, visibleCommentsCount))}
-                    {comments.length > visibleCommentsCount && (
-                      <LoadMoreButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVisibleCommentsCount((prev) => prev + 5);
-                        }}
-                      >
-                        Ver mais comentários...
-                      </LoadMoreButton>
-                    )}
-                  </>
-                ) : (
-                  <CommentListEmpty>
-                    Ainda sem comentários. Seja o primeiro!
-                  </CommentListEmpty>
-                )}
-              </CommentsList>
-            </CommentSection>
-          </CommentScrollArea>
-
-          <CommentFormArea>
-            {replyingTo && (
-              <ReplyIndicator>
-                <span>
-                  A responder a <strong>@{replyingTo.username}</strong>
-                </span>
-                <CancelReplyButton
-                  type="button"
-                  onClick={() => setReplyingTo(null)}
-                  title="Cancelar resposta"
-                >
-                  ✕
-                </CancelReplyButton>
-              </ReplyIndicator>
-            )}
-            <CommentForm onSubmit={handleCommentSubmit}>
-              <textarea
-                rows={2}
-                placeholder={
-                  replyingTo
-                    ? 'Escreva a sua resposta...'
-                    : 'Publique a sua resposta...'
-                }
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-              />
-              <CommentActions>
-                <button
-                  type="submit"
-                  disabled={loadingComment || !commentText.trim()}
-                >
-                  {loadingComment ? 'A enviar...' : 'Responder'}
-                </button>
-              </CommentActions>
-            </CommentForm>
-          </CommentFormArea>
-        </div>
-      )}
-
+      {/* MODAL DE QUOTE TWEET */}
       {isQuoteModalOpen && (
         <ModalOverlay
           onClick={(e) => {
@@ -1001,18 +1200,27 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
           >
             <LikesModalHeader>
               <h3>Comentar no Retweet</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsQuoteModalOpen(false);
-                }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsQuoteModalOpen(false)}>✕</button>
             </LikesModalHeader>
 
-            <CommentFormArea>
-              <CommentForm onSubmit={handleQuoteSubmit}>
+            <div style={{ padding: 16 }}>
+              <form onSubmit={handleQuoteSubmit}>
+                <textarea
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--white)',
+                    outline: 'none',
+                    fontSize: 18,
+                  }}
+                  placeholder="Adicione um comentário..."
+                  value={quoteText}
+                  onChange={(e) => setQuoteText(e.target.value)}
+                  autoFocus
+                />
+
                 <QuotePreview>
                   <strong>
                     {tweet.author.first_name || tweet.author.username}{' '}
@@ -1021,28 +1229,27 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                   <p>{tweet.content}</p>
                 </QuotePreview>
 
-                <textarea
-                  rows={3}
-                  placeholder="Adicione um comentário..."
-                  value={quoteText}
-                  onChange={(e) => setQuoteText(e.target.value)}
-                  autoFocus
-                />
-
-                <CommentActions>
-                  <button
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: 12,
+                  }}
+                >
+                  <ReplySubmitButton
                     type="submit"
                     disabled={loadingQuote || !quoteText.trim()}
                   >
-                    {loadingQuote ? 'A enviar...' : 'Postar'}
-                  </button>
-                </CommentActions>
-              </CommentForm>
-            </CommentFormArea>
+                    {loadingQuote ? 'Enviando...' : 'Postar'}
+                  </ReplySubmitButton>
+                </div>
+              </form>
+            </div>
           </LikesModalContainer>
         </ModalOverlay>
       )}
 
+      {/* MODAL DE QUEM RETUITOU */}
       {isRetweetsModalOpen && (
         <ModalOverlay
           onClick={(e) => {
@@ -1058,14 +1265,18 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
             <LikesList>
               {loadingRetweetedBy ? (
-                <LikesModalLoading>A carregar...</LikesModalLoading>
+                <LikesModalLoading>Carregando...</LikesModalLoading>
               ) : retweetedByUsers && retweetedByUsers.length > 0 ? (
                 retweetedByUsers.map((retweetUser, index) => {
                   const isMe = user?.username === retweetUser.username;
                   return (
                     <LikeUserItem
                       key={`${retweetUser.id}-${index}`}
-                      onClick={(e) => handleUserClick(e, retweetUser.username)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRetweetsModalOpen(false);
+                        navigate(`/profile/${retweetUser.username}`);
+                      }}
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
@@ -1080,26 +1291,26 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
-                          type="button"
                           className={
                             retweetUser.is_following ? 'following' : 'follow'
                           }
                           onClick={(e) => handleToggleFollow(e, retweetUser)}
                         >
-                          {retweetUser.is_following ? 'A seguir' : 'Seguir'}
+                          {retweetUser.is_following ? 'Seguindo' : 'Seguir'}
                         </button>
                       )}
                     </LikeUserItem>
                   );
                 })
               ) : (
-                <LikesModalEmpty>Nenhum retweet ainda.</LikesModalEmpty>
+                <LikesModalEmpty>Nenhum retuite ainda.</LikesModalEmpty>
               )}
             </LikesList>
           </LikesModalContainer>
         </ModalOverlay>
       )}
 
+      {/* MODAL DE QUEM CURTIU */}
       {isLikesModalOpen && (
         <ModalOverlay
           onClick={(e) => {
@@ -1115,14 +1326,18 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
 
             <LikesList>
               {loadingLikedBy ? (
-                <LikesModalLoading>A carregar...</LikesModalLoading>
+                <LikesModalLoading>Carregando...</LikesModalLoading>
               ) : likedByUsers && likedByUsers.length > 0 ? (
                 likedByUsers.map((likedUser, index) => {
                   const isMe = user?.username === likedUser.username;
                   return (
                     <LikeUserItem
                       key={`${likedUser.id}-${index}`}
-                      onClick={(e) => handleUserClick(e, likedUser.username)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsLikesModalOpen(false);
+                        navigate(`/profile/${likedUser.username}`);
+                      }}
                     >
                       <LikeUserInner>
                         <LikeUserAvatar
@@ -1137,13 +1352,12 @@ const Tweet: React.FC<TweetProps> = ({ tweet, onDelete, onUpdate }) => {
                       </LikeUserInner>
                       {!isMe && (
                         <button
-                          type="button"
                           className={
                             likedUser.is_following ? 'following' : 'follow'
                           }
                           onClick={(e) => handleToggleFollow(e, likedUser)}
                         >
-                          {likedUser.is_following ? 'A seguir' : 'Seguir'}
+                          {likedUser.is_following ? 'Seguindo' : 'Seguir'}
                         </button>
                       )}
                     </LikeUserItem>

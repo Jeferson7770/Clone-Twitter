@@ -1,6 +1,15 @@
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { Chat, Rocket, Favorite } from 'styled-icons/material';
 import { ArrowRepeat } from 'styled-icons/bootstrap';
+
+const highlightAnimation = keyframes`
+  0% {
+    background-color: rgba(29, 155, 240, 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+`;
 
 export const Container = styled.div`
   display: flex;
@@ -240,17 +249,17 @@ export const Status = styled.div<{
   font-size: 13px;
   color: ${(props) =>
     props.$isLiked
-      ? 'var(--like)'
+      ? 'var(--like, #f91880)'
       : props.$isRetweeted
-        ? 'var(--retweet)'
+        ? 'var(--retweet, #00ba7c)'
         : 'var(--gray)'};
 
   &.active-like {
-    color: var(--like);
+    color: var(--like, #f91880);
   }
 
   &.active-retweet {
-    color: var(--retweet);
+    color: var(--retweet, #00ba7c);
   }
 
   .clickable-likes {
@@ -260,22 +269,35 @@ export const Status = styled.div<{
       text-decoration: underline;
     }
   }
+
+  svg {
+    fill: currentColor;
+  }
 `;
 
-export const CommentIcon = styled(Chat)`
-  width: 19px;
-  height: 19px;
+export const CommentIcon = styled(Chat)<{ $hasReplies?: boolean }>`
+  width: 18px;
+  height: 18px;
+  fill: ${(props) =>
+    props.$hasReplies ? 'var(--twitter, #1d9bf0)' : 'currentColor'};
+  transition: fill 0.2s;
 `;
 
 export const RetweetIcon = styled(ArrowRepeat)`
   width: 19px;
   height: 19px;
+  fill: currentColor;
+  transition: fill 0.2s;
 `;
 
 export const LikeIcon = styled(Favorite)<{ $isLiked?: boolean }>`
-  width: 19px;
-  height: 19px;
-  fill: ${(props) => (props.$isLiked ? 'var(--like)' : 'currentColor')};
+  width: 18px;
+  height: 18px;
+  fill: ${(props) => (props.$isLiked ? '#f91880' : 'currentColor')} !important;
+  color: ${(props) => (props.$isLiked ? '#f91880' : 'currentColor')} !important;
+  transition:
+    fill 0.2s,
+    color 0.2s;
 `;
 
 export const CommentHeaderBar = styled.div`
@@ -303,20 +325,6 @@ export const CloseCommentsButton = styled.button`
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-export const CancelReplyButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--white);
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: bold;
-  padding: 0 4px;
-
-  &:hover {
-    text-decoration: underline;
   }
 `;
 
@@ -406,70 +414,10 @@ export const CommentScrollArea = styled.div`
   scrollbar-width: none;
 `;
 
-export const CommentFormArea = styled.div`
-  padding: 16px;
-  border-top: 1px solid var(--outline);
-  flex-shrink: 0;
-`;
-
 export const CommentSection = styled.div`
   margin-top: 0;
   border-top: none;
   padding-top: 12px;
-`;
-
-export const CommentForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-bottom: none;
-  padding-bottom: 0;
-
-  textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: var(--white);
-    outline: none;
-    resize: none;
-    font-family: inherit;
-    font-size: 16px;
-    line-height: 22px;
-    padding: 8px 0;
-
-    &::placeholder {
-      color: var(--gray);
-    }
-  }
-`;
-
-export const CommentActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-top: 8px;
-  gap: 12px;
-
-  button {
-    background: var(--twitter);
-    color: var(--white);
-    border: none;
-    padding: 8px 18px;
-    border-radius: 999px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 15px;
-    transition: background 0.2s;
-
-    &:hover {
-      background: var(--twitter-light-hover);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
 `;
 
 export const CommentsList = styled.div`
@@ -478,12 +426,21 @@ export const CommentsList = styled.div`
   margin-top: 4px;
 `;
 
-export const CommentItem = styled.div`
+export const CommentItem = styled.div<{ $isHighlighted?: boolean }>`
   display: flex;
   gap: 12px;
-  padding: 12px 0;
+  padding: 12px 8px;
   position: relative;
   border-bottom: 1px solid var(--outline);
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+
+  ${(props) =>
+    props.$isHighlighted &&
+    css`
+      animation: ${highlightAnimation} 3.5s ease-out forwards;
+      border-left: 3px solid var(--twitter);
+    `}
 
   &:last-child {
     border-bottom: none;
@@ -555,17 +512,32 @@ export const CommentItemActions = styled.div`
   font-size: 13px;
 `;
 
-export const ActionWrapper = styled.span<{ $isLiked?: boolean }>`
+export const ActionWrapper = styled.span<{
+  $isLiked?: boolean;
+  $isCommented?: boolean;
+}>`
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-  color: ${(props) => (props.$isLiked ? 'var(--like)' : 'inherit')};
-  transition: color 0.2s;
+  color: ${(props) =>
+    props.$isLiked
+      ? '#f91880'
+      : props.$isCommented
+        ? 'var(--twitter, #1d9bf0)'
+        : 'var(--gray)'};
+  transition:
+    color 0.2s,
+    transform 0.1s;
 
   &:hover {
     color: ${(props) =>
-      props.$isLiked ? 'var(--danger-hover)' : 'var(--twitter)'};
+      props.$isLiked ? '#e0126f' : 'var(--twitter, #1d9bf0)'};
+    transform: scale(1.05);
+  }
+
+  svg {
+    fill: currentColor;
   }
 `;
 
@@ -580,15 +552,50 @@ export const LikeCountSpan = styled.span`
 export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
   display: flex;
   flex-direction: column;
-  margin-left: 20px;
-  padding-left: 0;
-  border-left: none;
+  margin-left: 19px;
+  padding-left: 20px;
+  border-left: 2px solid var(--outline);
   margin-top: 4px;
+  margin-bottom: 8px;
+`;
 
-  & & {
-    margin-left: 0;
-    padding-left: 0;
-    border-left: none;
+export const ReplyingToTag = styled.div`
+  font-size: 13px;
+  color: var(--gray);
+  margin-top: 2px;
+  margin-bottom: 4px;
+
+  span {
+    color: var(--twitter);
+  }
+`;
+
+export const ToggleRepliesButton = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--gray);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 4px 0;
+  transition: color 0.2s;
+
+  .line {
+    width: 24px;
+    height: 1px;
+    background-color: var(--gray);
+  }
+
+  &:hover {
+    color: var(--white);
+
+    .line {
+      background-color: var(--white);
+    }
   }
 `;
 
@@ -622,19 +629,6 @@ export const LoadMoreButton = styled.button`
   }
 `;
 
-export const ReplyIndicator = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--gray);
-
-  strong {
-    color: var(--twitter);
-  }
-`;
-
 export const LikesList = styled.div`
   display: flex;
   flex-direction: column;
@@ -659,29 +653,25 @@ export const LikeUserItem = styled.div`
   &:hover {
     background: rgba(255, 255, 255, 0.03);
   }
+`;
 
-  button.follow,
-  button.following {
-    background: transparent;
-    color: var(--white);
-    border: 1px solid var(--twitter);
-    padding: 6px 16px;
-    border-radius: 999px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 14px;
+export const EditButton = styled.button<{ $outlined?: boolean }>`
+  background: ${(props) =>
+    props.$outlined ? 'transparent' : 'var(--twitter)'};
+  color: ${(props) => (props.$outlined ? 'var(--twitter)' : 'var(--white)')};
+  border: ${(props) => (props.$outlined ? '1px solid var(--twitter)' : 'none')};
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
 
-    &.following {
-      background: var(--twitter);
-      color: var(--white);
-      border: 1px solid var(--outline);
-
-      &:hover {
-        border-color: var(--danger);
-        color: var(--white);
-        background: var(--danger);
-      }
-    }
+  &:hover {
+    background: ${(props) =>
+      props.$outlined
+        ? 'rgba(29, 161, 242, 0.1)'
+        : 'var(--twitter-dark-hover, #1a91da)'};
   }
 `;
 
@@ -868,8 +858,6 @@ export const QuotedContent = styled.p`
   word-break: break-word;
 `;
 
-/* Modal de exclusão com cores e layout ajustados */
-
 export const DeleteModalCard = styled.div`
   background: var(--primary);
   color: var(--white);
@@ -895,6 +883,19 @@ export const DeleteModalCard = styled.div`
     margin-bottom: 24px;
     line-height: 22px;
   }
+`;
+
+export const DeleteModalContainer = styled(DeleteModalCard)``;
+
+export const DeleteModalText = styled.p`
+  color: #71767b;
+  font-size: 15px;
+  line-height: 20px;
+  margin-bottom: 24px;
+  margin-top: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
 `;
 
 export const DeleteModalRowActions = styled.div`
@@ -938,5 +939,141 @@ export const DeleteModalRowActions = styled.div`
     &:hover {
       background-color: #d7dbdc;
     }
+  }
+`;
+
+export const ReplyModalContainer = styled.div`
+  background: #000000;
+  border: 1px solid var(--outline);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+`;
+
+export const ReplyModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+
+  button {
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 18px;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+`;
+
+export const ReplyModalBody = styled.div`
+  padding: 0 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+`;
+
+export const ReplyTweetParent = styled.div`
+  display: flex;
+  gap: 12px;
+
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .right-column {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+`;
+
+export const ReplyThreadLine = styled.div`
+  width: 2px;
+  flex: 1;
+  background-color: #333639;
+  margin-top: 4px;
+  margin-bottom: 4px;
+`;
+
+export const ReplyReplyingToText = styled.p`
+  font-size: 14px;
+  color: var(--gray);
+  margin-top: 12px;
+  margin-bottom: 12px;
+
+  span {
+    color: var(--twitter);
+  }
+`;
+
+export const ReplyFormContainer = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--white);
+      font-size: 18px;
+      font-family: inherit;
+      resize: none;
+      line-height: 24px;
+      padding-top: 8px;
+
+      &::placeholder {
+        color: #71767b;
+      }
+    }
+  }
+
+  .form-footer {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--outline);
+    padding-top: 12px;
+  }
+`;
+
+export const ReplySubmitButton = styled.button`
+  background-color: var(--twitter);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--twitter-light-hover, #1a91da);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
