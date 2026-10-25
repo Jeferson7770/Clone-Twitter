@@ -14,19 +14,32 @@ export const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  padding: 0;
+
+  @media (max-width: 500px) {
+    align-items: flex-end;
+  }
 `;
 
 export const ModalContainer = styled.div`
   background: var(--primary);
   width: 100%;
   max-width: 600px;
-  max-height: 80vh;
+  height: 80vh;
+  max-height: 650px;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   z-index: 10000;
+
+  @media (max-width: 500px) {
+    width: 100%;
+    height: 90vh;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+  }
 `;
 
 export const Header = styled.div`
@@ -105,9 +118,10 @@ export const UnreadDot = styled.div`
 export const IconArea = styled.div`
   display: flex;
   justify-content: flex-end;
-  width: 48px;
+  width: 40px;
   margin-right: 12px;
-  padding-top: 4px;
+  padding-top: 2px;
+  flex-shrink: 0;
 `;
 
 export const LikeIcon = styled(Favorite)`
@@ -144,6 +158,7 @@ export const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow: hidden;
 `;
 
 export const UserAvatar = styled.div<{ $avatarUrl?: string }>`
@@ -153,8 +168,9 @@ export const UserAvatar = styled.div<{ $avatarUrl?: string }>`
   background: var(--gray);
   background-size: cover;
   background-position: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   cursor: pointer;
+  flex-shrink: 0;
 
   ${(props) =>
     props.$avatarUrl &&
@@ -166,7 +182,8 @@ export const UserAvatar = styled.div<{ $avatarUrl?: string }>`
 export const UserInfo = styled.div`
   font-size: 15px;
   color: var(--white);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  word-break: break-word;
 
   > strong {
     font-weight: bold;
@@ -182,10 +199,25 @@ export const UserInfo = styled.div`
   }
 `;
 
-export const TweetPreview = styled.p`
+export const TweetPreview = styled.div<{ $isComment?: boolean }>`
+  color: var(--white);
   font-size: 15px;
-  color: var(--gray);
+  margin-top: 6px;
+  word-break: break-word;
+  white-space: pre-wrap;
   line-height: 20px;
+  max-width: 100%;
+
+  ${(props) =>
+    props.$isComment &&
+    css`
+      color: #e7e9ea;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--outline);
+      margin-top: 8px;
+    `}
 `;
 
 export const LoadingState = styled.div`

@@ -148,6 +148,7 @@ class CommentSerializer(serializers.ModelSerializer):
     replies_count = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
     liked_by = serializers.SerializerMethodField()
+    parent_author_username = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
@@ -156,6 +157,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "author",
             "content",
             "parent",
+            "parent_author_username",
             "created_at",
             "likes_count",
             "is_liked",
@@ -183,6 +185,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_liked_by(self, obj):
         return UserSerializer(obj.likes.all(), many=True, context=self.context).data
+
+    def get_parent_author_username(self, obj):
+        if obj.parent and obj.parent.author:
+            return obj.parent.author.username
+        return None
 
 
 class QuotedTweetSerializer(serializers.ModelSerializer):
@@ -386,8 +393,34 @@ class NotificationSerializer(serializers.ModelSerializer):
         return texts.get(obj.type, "interagiu com você")
 
     def get_content(self, obj):
+        # 1. Se for comentário, tenta extrair o texto de várias fontes possíveis na model Notification
+        if obj.type == "comment":
+            if hasattr(obj, "comment") and obj.comment:
+                if hasattr(obj.comment, "content"):
+                    return obj.comment.content
+                return str(obj.comment)
+
+            for field_name in ["target_id", "object_id", "comment_id"]:
+                if hasattr(obj, field_name) and getattr(obj, field_name):
+                    try:
+                        comment_obj = Comment.objects.get(id=getattr(obj, field_name))
+                        return comment_obj.content
+                    except Comment.DoesNotExist:
+                        pass
+
+            if obj.tweet and obj.actor:
+                latest_comment = (
+                    Comment.objects.filter(tweet=obj.tweet, author=obj.actor)
+                    .order_by("-created_at")
+                    .first()
+                )
+                if latest_comment:
+                    return latest_comment.content
+
+        # 2. Fallback para tweets normais (curtidas, retweets, posts)
         if obj.tweet and obj.tweet.content:
-            return f"{obj.tweet.content[:50]}..."
+            return obj.tweet.content
+
         return None
 
     def get_tweet_id(self, obj):

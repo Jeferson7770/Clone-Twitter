@@ -1077,3 +1077,32 @@ export const ReplySubmitButton = styled.button`
     cursor: not-allowed;
   }
 `;
+
+export const QuoteModalContainer = styled.div`
+  background: var(--primary);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--outline);
+`;
+
+export const QuoteModalScrollArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(90vh - 65px);
+  padding: 0 16px 16px 16px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--outline);
+    border-radius: 3px;
+  }
+`;

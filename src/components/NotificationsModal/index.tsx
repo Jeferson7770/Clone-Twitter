@@ -108,11 +108,8 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
   const handleNotificationClick = (notif: Notification) => {
     const targetTweetId = notif.tweet_id || notif.tweet;
-
-    // Captura o ID correto do comentário vindo do backend
     const targetCommentId =
       notif.comment_id || notif.comment || notif.object_id || notif.target_id;
-
     const actorUsername = notif.user?.username || notif.actor?.username;
 
     onClose();
@@ -120,9 +117,16 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     if (notif.type === 'follow' && actorUsername) {
       navigate(`/profile/${actorUsername}`);
     } else if (targetTweetId) {
-      if (notif.type === 'comment' && targetCommentId) {
+      const isCommentNotification =
+        notif.type === 'comment' || Boolean(targetCommentId);
+
+      if (isCommentNotification) {
         navigate(`/status/${targetTweetId}`, {
-          state: { highlightCommentId: targetCommentId },
+          state: {
+            fromNotification: true,
+            openComments: true,
+            highlightCommentId: targetCommentId || undefined,
+          },
         });
       } else {
         navigate(`/status/${targetTweetId}`);
@@ -166,9 +170,9 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
         <ScrollableContent>
           {loading ? (
-            <LoadingState>Carregando...</LoadingState>
+            <LoadingState>A carregar...</LoadingState>
           ) : notifications.length === 0 ? (
-            <EmptyState>Nenhuma notificação no momento.</EmptyState>
+            <EmptyState>Sem notificações de momento.</EmptyState>
           ) : (
             notifications.map((notif, index) => {
               const username =
@@ -183,6 +187,7 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                 '/default-avatar.png';
 
               const isUnread = notif.is_read === false;
+              const isComment = notif.type === 'comment';
 
               return (
                 <NotificationItem
@@ -207,7 +212,9 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                       </span>
                     </UserInfo>
                     {notif.content && (
-                      <TweetPreview>{notif.content}</TweetPreview>
+                      <TweetPreview $isComment={isComment}>
+                        {notif.content}
+                      </TweetPreview>
                     )}
                   </ContentArea>
                 </NotificationItem>
@@ -225,17 +232,17 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 function getNotificationText(type: string): string {
   switch (type) {
     case 'like':
-      return 'curtiu o seu tweet.';
+      return 'gostou do seu tweet.';
     case 'comment':
       return 'respondeu ao seu tweet.';
     case 'retweet':
       return 'retweetou o seu tweet.';
     case 'follow':
-      return 'começou a seguir você.';
+      return 'começou a segui-lo.';
     case 'post':
       return 'publicou um novo tweet.';
     default:
-      return 'interagiu com você.';
+      return 'interagiu consigo.';
   }
 }
 

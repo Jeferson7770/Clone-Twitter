@@ -70,9 +70,8 @@ const SideBar: React.FC = () => {
 
     const fetchNews = async () => {
       try {
-        const response = await fetch(
-          'https://servicodados.ibge.gov.br/api/3/noticias/?qtd=4'
-        );
+        // ✅ Corrigido: usando a rota do proxy configurada no vite.config.ts para evitar CORS
+        const response = await fetch('/api-ibge/api/3/noticias/?qtd=4');
         const data = await response.json();
 
         if (isMounted && data && data.items) {
@@ -110,7 +109,7 @@ const SideBar: React.FC = () => {
             {
               id: 'fallback-3',
               category: 'Mundo · Valor Econômico',
-              title: 'Bolsas internacionais reagem a novos índices globais',
+              title: 'Bolsas internacionais reagerem a novos índices globais',
               url: 'https://valor.globo.com',
             },
           ]);
