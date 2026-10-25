@@ -22,7 +22,7 @@ export const Container = styled.div`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--hover, rgba(255, 255, 255, 0.03));
   }
 `;
 
@@ -138,7 +138,7 @@ export const DeleteButton = styled.button`
 
   &:hover {
     background-color: rgba(244, 33, 46, 0.1);
-    color: #f4212e;
+    color: var(--danger);
   }
 
   svg {
@@ -186,7 +186,7 @@ export const ImageModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--modal-bg, rgba(0, 0, 0, 0.85));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,17 +249,17 @@ export const Status = styled.div<{
   font-size: 13px;
   color: ${(props) =>
     props.$isLiked
-      ? 'var(--like, #f91880)'
+      ? 'var(--like)'
       : props.$isRetweeted
-        ? 'var(--retweet, #00ba7c)'
+        ? 'var(--retweet)'
         : 'var(--gray)'};
 
   &.active-like {
-    color: var(--like, #f91880);
+    color: var(--like);
   }
 
   &.active-retweet {
-    color: var(--retweet, #00ba7c);
+    color: var(--retweet);
   }
 
   .clickable-likes {
@@ -278,23 +278,32 @@ export const Status = styled.div<{
 export const CommentIcon = styled(Chat)<{ $hasReplies?: boolean }>`
   width: 18px;
   height: 18px;
-  fill: ${(props) =>
-    props.$hasReplies ? 'var(--twitter, #1d9bf0)' : 'currentColor'};
+  fill: ${(props) => (props.$hasReplies ? 'var(--twitter)' : 'currentColor')};
   transition: fill 0.2s;
 `;
 
-export const RetweetIcon = styled(ArrowRepeat)`
+export const RetweetIcon = styled(ArrowRepeat)<{ $isRetweeted?: boolean }>`
   width: 19px;
   height: 19px;
-  fill: currentColor;
-  transition: fill 0.2s;
+  fill: ${(props) =>
+    props.$isRetweeted ? 'var(--retweet)' : 'currentColor'} !important;
+  color: ${(props) =>
+    props.$isRetweeted ? 'var(--retweet)' : 'currentColor'} !important;
+  stroke: ${(props) =>
+    props.$isRetweeted ? 'var(--retweet)' : 'currentColor'} !important;
+  transition:
+    fill 0.2s,
+    color 0.2s,
+    stroke 0.2s;
 `;
 
 export const LikeIcon = styled(Favorite)<{ $isLiked?: boolean }>`
   width: 18px;
   height: 18px;
-  fill: ${(props) => (props.$isLiked ? '#f91880' : 'currentColor')} !important;
-  color: ${(props) => (props.$isLiked ? '#f91880' : 'currentColor')} !important;
+  fill: ${(props) =>
+    props.$isLiked ? 'var(--like)' : 'currentColor'} !important;
+  color: ${(props) =>
+    props.$isLiked ? 'var(--like)' : 'currentColor'} !important;
   transition:
     fill 0.2s,
     color 0.2s;
@@ -324,7 +333,7 @@ export const CloseCommentsButton = styled.button`
   border-radius: 50%;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--hover, rgba(255, 255, 255, 0.1));
   }
 `;
 
@@ -347,7 +356,7 @@ export const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(91, 112, 131, 0.4);
+  background: var(--modal-bg, rgba(91, 112, 131, 0.4));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,7 +372,7 @@ export const LikesModalContainer = styled.div<{ $isCommentModal?: boolean }>`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--shadow, rgba(0, 0, 0, 0.3));
   border: 1px solid var(--outline);
 `;
 
@@ -395,7 +404,7 @@ export const LikesModalHeader = styled.div`
     transition: background 0.2s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--hover, rgba(255, 255, 255, 0.1));
     }
   }
 `;
@@ -522,17 +531,16 @@ export const ActionWrapper = styled.span<{
   gap: 6px;
   color: ${(props) =>
     props.$isLiked
-      ? '#f91880'
+      ? 'var(--like)'
       : props.$isCommented
-        ? 'var(--twitter, #1d9bf0)'
+        ? 'var(--twitter)'
         : 'var(--gray)'};
   transition:
     color 0.2s,
     transform 0.1s;
 
   &:hover {
-    color: ${(props) =>
-      props.$isLiked ? '#e0126f' : 'var(--twitter, #1d9bf0)'};
+    color: ${(props) => (props.$isLiked ? 'var(--like)' : 'var(--twitter)')};
     transform: scale(1.05);
   }
 
@@ -651,7 +659,7 @@ export const LikeUserItem = styled.div`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--hover, rgba(255, 255, 255, 0.03));
   }
 `;
 
@@ -670,8 +678,8 @@ export const EditButton = styled.button<{ $outlined?: boolean }>`
   &:hover {
     background: ${(props) =>
       props.$outlined
-        ? 'rgba(29, 161, 242, 0.1)'
-        : 'var(--twitter-dark-hover, #1a91da)'};
+        ? 'var(--hover, rgba(29, 161, 242, 0.1))'
+        : 'var(--twitter-dark-hover)'};
   }
 `;
 
@@ -740,7 +748,7 @@ export const RetweetDropdown = styled.div`
   background-color: var(--primary);
   border: 1px solid var(--outline);
   border-radius: 12px;
-  box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.08);
+  box-shadow: 0px 4px 15px var(--shadow, rgba(0, 0, 0, 0.15));
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -761,7 +769,7 @@ export const DropdownItem = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--hover, rgba(255, 255, 255, 0.05));
   }
 `;
 
@@ -770,7 +778,7 @@ export const QuotePreview = styled.div`
   border-radius: 16px;
   padding: 14px;
   margin: 16px 0;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--quote-bg, rgba(255, 255, 255, 0.02));
 
   strong {
     font-size: 15px;
@@ -805,7 +813,7 @@ export const QuotedTweetCard = styled.div`
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--hover, rgba(255, 255, 255, 0.03));
   }
 `;
 
@@ -867,7 +875,7 @@ export const DeleteModalCard = styled.div`
   display: flex;
   flex-direction: column;
   padding: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 25px var(--shadow, rgba(0, 0, 0, 0.3));
   border: 1px solid var(--outline);
 
   h3 {
@@ -888,7 +896,7 @@ export const DeleteModalCard = styled.div`
 export const DeleteModalContainer = styled(DeleteModalCard)``;
 
 export const DeleteModalText = styled.p`
-  color: #71767b;
+  color: var(--gray);
   font-size: 15px;
   line-height: 20px;
   margin-bottom: 24px;
@@ -905,8 +913,8 @@ export const DeleteModalRowActions = styled.div`
   gap: 12px;
 
   button.confirm-btn {
-    background-color: #f4212e;
-    color: #ffffff;
+    background-color: var(--danger);
+    color: var(--white);
     border: none;
     border-radius: 9999px;
     padding: 8px 24px;
@@ -916,7 +924,7 @@ export const DeleteModalRowActions = styled.div`
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: #d91b26;
+      background-color: var(--danger-hover);
     }
 
     &:disabled {
@@ -926,8 +934,8 @@ export const DeleteModalRowActions = styled.div`
   }
 
   button.cancel-btn {
-    background-color: #eff3f4;
-    color: #0f1419;
+    background-color: var(--white);
+    color: var(--secondary);
     border: none;
     border-radius: 9999px;
     padding: 8px 20px;
@@ -937,13 +945,13 @@ export const DeleteModalRowActions = styled.div`
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: #d7dbdc;
+      background-color: var(--white);
     }
   }
 `;
 
 export const ReplyModalContainer = styled.div`
-  background: #000000;
+  background: var(--primary);
   border: 1px solid var(--outline);
   border-radius: 16px;
   width: 100%;
@@ -951,7 +959,7 @@ export const ReplyModalContainer = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px var(--shadow, rgba(0, 0, 0, 0.2));
 `;
 
 export const ReplyModalHeader = styled.div`
@@ -974,7 +982,7 @@ export const ReplyModalHeader = styled.div`
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: var(--hover, rgba(255, 255, 255, 0.1));
     }
   }
 `;
@@ -1005,7 +1013,7 @@ export const ReplyTweetParent = styled.div`
 export const ReplyThreadLine = styled.div`
   width: 2px;
   flex: 1;
-  background-color: #333639;
+  background-color: var(--outline);
   margin-top: 4px;
   margin-bottom: 4px;
 `;
@@ -1044,7 +1052,7 @@ export const ReplyFormContainer = styled.form`
       padding-top: 8px;
 
       &::placeholder {
-        color: #71767b;
+        color: var(--gray);
       }
     }
   }
@@ -1059,7 +1067,7 @@ export const ReplyFormContainer = styled.form`
 
 export const ReplySubmitButton = styled.button`
   background-color: var(--twitter);
-  color: #ffffff;
+  color: var(--white);
   border: none;
   border-radius: 9999px;
   padding: 8px 18px;
@@ -1069,7 +1077,7 @@ export const ReplySubmitButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: var(--twitter-light-hover, #1a91da);
+    background-color: var(--twitter-light-hover);
   }
 
   &:disabled {
@@ -1087,7 +1095,7 @@ export const QuoteModalContainer = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--shadow, rgba(0, 0, 0, 0.3));
   border: 1px solid var(--outline);
 `;
 

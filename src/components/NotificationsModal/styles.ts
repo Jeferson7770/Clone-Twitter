@@ -9,7 +9,7 @@ export const Overlay = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -111,7 +111,7 @@ export const UnreadDot = styled.div`
   transform: translateY(-50%);
   width: 8px;
   height: 8px;
-  background-color: var(--twitter, #1d9bf0);
+  background-color: var(--twitter);
   border-radius: 50%;
 `;
 
@@ -211,7 +211,7 @@ export const TweetPreview = styled.div<{ $isComment?: boolean }>`
   ${(props) =>
     props.$isComment &&
     css`
-      color: #e7e9ea;
+      color: var(--white);
       background: rgba(255, 255, 255, 0.04);
       padding: 10px 12px;
       border-radius: 12px;
