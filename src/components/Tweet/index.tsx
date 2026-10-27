@@ -30,7 +30,7 @@ import TweetHeader from './components/TweetHeader';
 import TweetMedia from './components/TweetMedia';
 import UsersModal from './components/UsersModal';
 
-// Mantém os imports antigos (`import { ITweetData } from '.../Tweet'`) funcionando
+// Mantém os imports antigos funcionando
 export type { IComment, ILikedUser, ITweetData } from './types';
 
 interface TweetProps {
@@ -60,7 +60,7 @@ const Tweet = ({ tweet, onDelete, onUpdate }: TweetProps) => {
     onSubmitted: comments.handleReplySubmitted,
   });
 
-  // Clicar fora da seção de comentários (e do menu de comentar) fecha a seção
+  // Clicar fora da seção de comentários fecha a seção
   useClickOutside(
     [commentSectionRef, menus.commentMenuRef],
     comments.closeSection,
@@ -158,6 +158,7 @@ const Tweet = ({ tweet, onDelete, onUpdate }: TweetProps) => {
               menuRef={menus.retweetMenuRef}
               count={retweet.retweetsCount}
               isRetweeted={retweet.isRetweeted}
+              hasQuoted={retweet.hasQuoted} // <-- Usando diretamente do hook useRetweet
               isMenuOpen={menus.openMenu === 'retweet'}
               onToggleMenu={handleRetweetMenuToggle}
               onRetweet={retweet.handleStandardRetweet}

@@ -21,6 +21,7 @@ export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
 
   const [retweetsCount, setRetweetsCount] = useState(tweet.retweets_count || 0);
   const [isRetweeted, setIsRetweeted] = useState(tweet.is_retweeted || false);
+  const [hasQuoted, setHasQuoted] = useState(tweet.has_quoted || false); // <-- Adicionado estado de quote
 
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
@@ -74,7 +75,7 @@ export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
       });
 
       setRetweetsCount((prev) => prev + 1);
-      setIsRetweeted(true);
+      setHasQuoted(true); // <-- Marca como citado para bloquear novas ações de retweet/quote
 
       if (user) {
         setRetweetedByUsers((prev) => prependUserIfMissing(prev, user));
@@ -120,6 +121,7 @@ export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
   return {
     retweetsCount,
     isRetweeted,
+    hasQuoted, // <-- Expor a propriedade no retorno do hook
     handleStandardRetweet,
     quote: {
       isOpen: isQuoteOpen,

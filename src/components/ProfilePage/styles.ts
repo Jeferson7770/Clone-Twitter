@@ -185,7 +185,6 @@ export const ActionButtons = styled.div`
   align-items: center;
   gap: 8px;
 
-  /* Quando o EditButton estiver dentro do ActionButtons, removemos a posição absoluta */
   ${EditButton} {
     position: relative;
     top: auto;
@@ -367,8 +366,8 @@ export const AvatarUploadButton = styled.div`
 export const CameraIcon = styled(CameraAlt)`
   width: 22px;
   height: 22px;
-  color: var(--white);
-  fill: var(--white);
+  color: #ffffff;
+  fill: #ffffff;
 `;
 
 export const InputGroup = styled.div`
@@ -395,7 +394,11 @@ export const InputGroup = styled.div`
   }
 
   input[type='date'] {
-    color-scheme: dark;
+    color-scheme: light dark;
+    &::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: var(--calendar-filter, invert(0.6));
+    }
   }
 
   textarea {

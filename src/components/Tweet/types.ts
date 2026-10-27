@@ -14,7 +14,7 @@ export interface IComment {
   replies_count?: number;
   replies?: IComment[];
   parent?: number | string | null;
-  parent_author_username?: string | null; // <--- Adicionado aqui
+  parent_author_username?: string | null;
   media?: string | null;
   media_type?: 'image' | 'video';
 }
@@ -46,6 +46,7 @@ export interface ITweetData {
   comments_count?: number;
   is_liked?: boolean;
   is_retweeted?: boolean;
+  has_quoted?: boolean; 
   media?: string | null;
   media_type?: 'image' | 'video';
   isRetweet?: boolean;
