@@ -159,6 +159,7 @@ export const ContentArea = styled.div`
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 `;
 
 export const UserAvatar = styled.div<{ $avatarUrl?: string }>`

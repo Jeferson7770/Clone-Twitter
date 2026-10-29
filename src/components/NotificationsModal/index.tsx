@@ -63,37 +63,56 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Busca e polling em tempo real continuo (a cada 2.5s)
   useEffect(() => {
+    if (!isOpen) return;
+
     let isMounted = true;
 
-    const fetchNotifications = (isInitial = false) => {
-      if (isInitial && notifications.length === 0) setLoading(true);
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get('/notifications/');
+        if (!isMounted) return;
 
-      api
-        .get('/notifications/')
-        .then((res) => {
-          if (isMounted && Array.isArray(res.data)) {
-            setNotifications(res.data);
-          }
-        })
-        .catch((err) => {
-          console.error('Erro ao buscar notificações:', err);
-        })
-        .finally(() => {
-          if (isMounted && isInitial) setLoading(false);
-        });
+        const dataList = Array.isArray(res.data)
+          ? res.data
+          : res.data?.results || res.data?.notifications || [];
+
+        if (Array.isArray(dataList)) {
+          // 🛡️ Filtro cirúrgico por assinatura exata (Autor + Tipo + Conteúdo)
+          const seen = new Set<string>();
+          const uniqueList: Notification[] = [];
+
+          dataList.forEach((item: Notification) => {
+            const actor =
+              item.user?.username || item.actor?.username || 'unknown';
+            const type = item.type || 'default';
+            const content = (item.content || item.text || '').trim();
+
+            const signature = `${actor}-${type}-${content}`;
+
+            if (!seen.has(signature)) {
+              seen.add(signature);
+              uniqueList.push(item);
+            }
+          });
+
+          setNotifications(uniqueList);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar notificações:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    fetchNotifications(true);
-
-    const intervalId = setInterval(() => fetchNotifications(false), 2500);
+    fetchNotifications();
 
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
     };
-  }, []);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -102,12 +121,11 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   };
 
   const handleNotificationClick = async (notif: Notification) => {
-    // Se não estiver lida, envia requisição para marcar individualmente ou geral
     if (notif.is_read === false) {
       try {
-        await api.post(`/notifications/${notif.id}/read/`);
+        await api.post(`/notifications/${notif.id}/read/`).catch(() => {});
       } catch {
-        api.post('/notifications/').catch(() => {});
+        // Ignora caso a rota falhe
       }
     }
 
@@ -201,7 +219,7 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
               return (
                 <NotificationItem
-                  key={`${notif.id}-${index}`}
+                  key={notif.id || index}
                   onClick={() => handleNotificationClick(notif)}
                   $isUnread={isUnread}
                 >
