@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
@@ -63,6 +63,13 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // IDs marcados como lidos localmente (ref: não dispara novo fetch)
+  const locallyReadIdsRef = useRef<Set<string>>(new Set());
+
+  // Contador incrementado a cada clique: gera um notifKey único
+  // sem função impura (Date.now) e permite rolar de novo ao mesmo comentário
+  const clickCounterRef = useRef(0);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -78,32 +85,64 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
           : res.data?.results || res.data?.notifications || [];
 
         if (Array.isArray(dataList)) {
-          // 🛡️ Filtro cirúrgico por assinatura exata (Autor + Tipo + Conteúdo)
           const seen = new Set<string>();
           const uniqueList: Notification[] = [];
 
-          dataList.forEach((item: Notification) => {
+          dataList.forEach((item: Notification, index: number) => {
+            const idKey =
+              item.id !== undefined ? String(item.id) : `idx-${index}`;
+
             const actor =
               item.user?.username || item.actor?.username || 'unknown';
-            const type = item.type || 'default';
-            const content = (item.content || item.text || '').trim();
+            const tweetId = item.tweet_id ?? item.tweet ?? null;
+            const commentId =
+              item.comment_id ??
+              item.comment ??
+              (item.type === 'comment' ? item.object_id : null) ??
+              null;
 
-            const signature = `${actor}-${type}-${content}`;
-
-            if (!seen.has(signature)) {
-              seen.add(signature);
-              uniqueList.push(item);
+            // Assinatura baseada no ALVO, não no texto
+            let signature: string;
+            if (commentId !== null) {
+              // Mesmo autor + tipo + mesmo comentário = notificação repetida
+              signature = `${item.type}-${actor}-comment-${commentId}`;
+            } else if (
+              (item.type === 'like' || item.type === 'retweet') &&
+              tweetId !== null
+            ) {
+              // Mesma curtida/retweet do mesmo autor no mesmo tweet
+              signature = `${item.type}-${actor}-tweet-${tweetId}`;
+            } else if (item.type === 'follow') {
+              signature = `follow-${actor}`;
+            } else {
+              // Sem informação suficiente: não arrisca esconder nada
+              signature = `id-${idKey}`;
             }
+
+            if (seen.has(signature)) return;
+            seen.add(signature);
+
+            uniqueList.push(
+              locallyReadIdsRef.current.has(idKey)
+                ? { ...item, is_read: true }
+                : item
+            );
           });
 
+          // A lista guardada no estado mantém is_read=false (as bolinhas
+          // continuam visíveis enquanto o modal está aberto)
           setNotifications(uniqueList);
+
+          // Marca tudo como lido no servidor, para o contador do menu
+          // refletir o valor real no próximo polling
+          if (dataList.some((n: Notification) => n.is_read === false)) {
+            api.post('/notifications/').catch(() => {});
+          }
         }
       } catch (err) {
         console.error('Erro ao buscar notificações:', err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -120,19 +159,38 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     if (e.target === e.currentTarget) onClose();
   };
 
-  const handleNotificationClick = async (notif: Notification) => {
-    if (notif.is_read === false) {
-      try {
-        await api.post(`/notifications/${notif.id}/read/`).catch(() => {});
-      } catch {
-        // Ignora caso a rota falhe
-      }
-    }
+  const handleNotificationClick = (notif: Notification) => {
+    locallyReadIdsRef.current.add(String(notif.id));
 
-    const targetTweetId = notif.tweet_id || notif.tweet;
-    const targetCommentId =
-      notif.comment_id || notif.comment || notif.object_id || notif.target_id;
+    setNotifications((prev) =>
+      prev.map((item) =>
+        item.id === notif.id ? { ...item, is_read: true } : item
+      )
+    );
+
+    // Marca como lida no backend sem bloquear a navegação
+    api
+      .post(`/notifications/${notif.id}/read/`)
+      .catch(() =>
+        api
+          .patch(`/notifications/${notif.id}/`, { is_read: true })
+          .catch(() => {})
+      );
+
+    const targetTweetId = notif.tweet_id ?? notif.tweet ?? null;
     const actorUsername = notif.user?.username || notif.actor?.username;
+
+    // ID do comentário exato:
+    // - 'comment': comentário novo (comment_id / comment / object_id)
+    // - 'like'/'retweet': só se o backend mandar um comment explícito
+    //   (object_id/target_id nesses casos costuma ser o ID do tweet)
+    let targetCommentId: string | number | null = null;
+    if (notif.type === 'comment') {
+      targetCommentId =
+        notif.comment_id ?? notif.comment ?? notif.object_id ?? null;
+    } else if (notif.type === 'like' || notif.type === 'retweet') {
+      targetCommentId = notif.comment_id ?? notif.comment ?? null;
+    }
 
     onClose();
 
@@ -142,18 +200,15 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     }
 
     if (targetTweetId) {
-      const isCommentOrReply =
-        notif.type === 'comment' ||
-        Boolean(targetCommentId) ||
-        notif.type === 'like' ||
-        notif.type === 'retweet';
-
-      if (isCommentOrReply) {
+      if (notif.type === 'comment' || targetCommentId) {
+        clickCounterRef.current += 1;
         navigate(`/status/${targetTweetId}`, {
           state: {
             fromNotification: true,
             openComments: true,
-            highlightCommentId: targetCommentId || undefined,
+            highlightCommentId: targetCommentId ?? undefined,
+            // Muda a cada clique: permite rolar de novo para o mesmo comentário
+            notifKey: clickCounterRef.current,
           },
         });
       } else {
@@ -215,11 +270,12 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
                 '/default-avatar.png';
 
               const isUnread = notif.is_read === false;
-              const isComment = notif.type === 'comment';
+              const isComment =
+                notif.type === 'comment' || notif.comment_id != null;
 
               return (
                 <NotificationItem
-                  key={notif.id || index}
+                  key={notif.id ?? index}
                   onClick={() => handleNotificationClick(notif)}
                   $isUnread={isUnread}
                 >

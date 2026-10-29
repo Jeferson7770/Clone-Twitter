@@ -9,6 +9,7 @@ from api.views import (
     UserViewSet,
     NotificationListView,
     UnreadNotificationCountView,
+    NotificationReadView, 
     MessageViewSet,
     PasswordResetRequestView,
     PasswordResetConfirmView,
@@ -38,6 +39,11 @@ urlpatterns = [
         name="password_reset_confirm",
     ),
     path("notifications/", NotificationListView.as_view(), name="notifications"),
+    path(
+        "notifications/<int:pk>/read/",
+        NotificationReadView.as_view(),
+        name="notification-read",
+    ),  # 👈 2. Adicione esta rota exata para o endpoint deixar de dar 404
     path(
         "notifications/unread_count/",
         UnreadNotificationCountView.as_view(),

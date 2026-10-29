@@ -535,6 +535,19 @@ class NotificationListView(generics.ListAPIView):
         )
 
 
+class NotificationReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk=None, *args, **kwargs):
+        notifications = Notification.objects.filter(
+            recipient=request.user, is_read=False
+        )
+        if pk is not None:
+            notifications = notifications.filter(pk=pk)
+        notifications.update(is_read=True)
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
 class UnreadNotificationCountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

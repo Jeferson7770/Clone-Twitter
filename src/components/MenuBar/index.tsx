@@ -50,12 +50,19 @@ const MenuBar: React.FC<MenuBarProps> = (_props) => {
   const prevNotificationsRef = useRef<number>(0);
   const prevMessagesRef = useRef<number>(0);
 
+  // Espelha o estado do modal para o polling (o setInterval não vê o state atualizado)
+  const isNotificationsOpenRef = useRef<boolean>(false);
+
   const isHome = location.pathname === '/';
   const isMyProfile =
     location.pathname === '/profile' || username === authUser?.username;
   const isFavorites = location.pathname === '/favorites';
   const isMessages = location.pathname.startsWith('/messages');
   const isSettings = location.pathname === '/settings';
+
+  useEffect(() => {
+    isNotificationsOpenRef.current = isNotificationsModalOpen;
+  }, [isNotificationsModalOpen]);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -111,18 +118,25 @@ const MenuBar: React.FC<MenuBarProps> = (_props) => {
               : (data?.unread_count ?? data?.count ?? data?.unread ?? 0)
           ) || 0;
 
-        if (
-          count > prevNotificationsRef.current &&
-          Notification.permission === 'granted'
-        ) {
-          new Notification('Twitter Clone', {
-            body: 'Tens novas notificações e interações!',
-            icon: '/favicon.ico',
-          });
-        }
+        if (isNotificationsOpenRef.current) {
+          // Com o modal aberto, o utilizador já está a ver as notificações
+          prevNotificationsRef.current = count;
+          setUnreadCount(0);
+        } else {
+          if (
+            count > prevNotificationsRef.current &&
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
+            new Notification('Twitter Clone', {
+              body: 'Tens novas notificações e interações!',
+              icon: '/favicon.ico',
+            });
+          }
 
-        prevNotificationsRef.current = count;
-        setUnreadCount(count);
+          prevNotificationsRef.current = count;
+          setUnreadCount(count);
+        }
       } catch (error) {
         console.error('Erro ao buscar contador de notificações:', error);
       }
@@ -139,6 +153,7 @@ const MenuBar: React.FC<MenuBarProps> = (_props) => {
 
         if (
           count > prevMessagesRef.current &&
+          'Notification' in window &&
           Notification.permission === 'granted'
         ) {
           new Notification('Nova Mensagem Direta', {

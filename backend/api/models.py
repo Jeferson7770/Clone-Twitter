@@ -2,7 +2,7 @@ import re
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
-from django.db.models.signals import post_save
+from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 
 
@@ -147,6 +147,13 @@ class Notification(models.Model):
     )
     type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey(
+        Comment,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -199,23 +206,71 @@ def create_like_notification(sender, instance, created, **kwargs):
         )
 
 
+@receiver(m2m_changed, sender=Comment.likes.through)
+def create_comment_like_notification(
+    sender, instance, action, reverse, pk_set, **kwargs
+):
+    """
+    Curtida em comentário usa ManyToMany (Comment.likes), então o post_save
+    não dispara. Aqui tratamos o m2m_changed:
+    - post_add: notifica o autor do comentário (exceto se curtir o próprio)
+    - post_remove: apaga a notificação, evitando duplicadas ao curtir de novo
+    """
+    if action not in ("post_add", "post_remove") or not pk_set:
+        return
+
+    if reverse:
+        # user.liked_comments.add(comment): instance é o User
+        comments = Comment.objects.filter(pk__in=pk_set).select_related(
+            "author", "tweet"
+        )
+        pairs = [(comment, instance) for comment in comments]
+    else:
+        # comment.likes.add(user): instance é o Comment
+        users = User.objects.filter(pk__in=pk_set)
+        pairs = [(instance, user) for user in users]
+
+    for comment, user in pairs:
+        if user.id == comment.author_id:
+            continue
+
+        if action == "post_add":
+            Notification.objects.get_or_create(
+                recipient=comment.author,
+                actor=user,
+                type="like",
+                comment=comment,
+                defaults={"tweet": comment.tweet},
+            )
+        else:
+            Notification.objects.filter(
+                recipient=comment.author,
+                actor=user,
+                type="like",
+                comment=comment,
+            ).delete()
+
+
 @receiver(post_save, sender=Comment)
 def create_comment_notification(sender, instance, created, **kwargs):
-    if created:
-        if instance.parent and instance.author != instance.parent.author:
-            Notification.objects.create(
-                recipient=instance.parent.author,
-                actor=instance.author,
-                type="comment",
-                tweet=instance.tweet,
-            )
-        elif not instance.parent and instance.author != instance.tweet.author:
-            Notification.objects.create(
-                recipient=instance.tweet.author,
-                actor=instance.author,
-                type="comment",
-                tweet=instance.tweet,
-            )
+    if not created:
+        return
+
+    # Resposta a outro comentário: avisa o autor do comentário pai.
+    # Comentário direto: avisa o autor do tweet.
+    if instance.parent:
+        recipient = instance.parent.author
+    else:
+        recipient = instance.tweet.author
+
+    if instance.author != recipient:
+        Notification.objects.create(
+            recipient=recipient,
+            actor=instance.author,
+            type="comment",
+            tweet=instance.tweet,
+            comment=instance,
+        )
 
 
 @receiver(post_save, sender=Tweet)

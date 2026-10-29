@@ -353,6 +353,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
     tweet_id = serializers.SerializerMethodField()
+    comment_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
@@ -363,6 +364,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "text",
             "content",
             "tweet_id",
+            "comment_id",
             "is_read",
             "created_at",
         ]
@@ -383,6 +385,14 @@ class NotificationSerializer(serializers.ModelSerializer):
         }
 
     def get_text(self, obj):
+        # Curtida num comentário (e não num tweet)
+        if obj.type == "like" and obj.comment_id:
+            return "curtiu seu comentário"
+
+        # Resposta a outro comentário (e não comentário direto no tweet)
+        if obj.type == "comment" and obj.comment_id and obj.comment.parent_id:
+            return "respondeu ao seu comentário"
+
         texts = {
             "like": "curtiu seu tweet",
             "comment": "respondeu ao seu tweet",
@@ -393,31 +403,16 @@ class NotificationSerializer(serializers.ModelSerializer):
         return texts.get(obj.type, "interagiu com você")
 
     def get_content(self, obj):
-        # 1. Se for comentário, tenta extrair o texto de várias fontes possíveis na model Notification
+        # Comentário (resposta) ou curtida em comentário: mostra o texto EXATO
+        # do comentário ligado a esta notificação.
+        if obj.comment_id and obj.type in ("comment", "like"):
+            return obj.comment.content
+
         if obj.type == "comment":
-            if hasattr(obj, "comment") and obj.comment:
-                if hasattr(obj.comment, "content"):
-                    return obj.comment.content
-                return str(obj.comment)
+            # Notificação antiga, criada antes do campo "comment" existir
+            return None
 
-            for field_name in ["target_id", "object_id", "comment_id"]:
-                if hasattr(obj, field_name) and getattr(obj, field_name):
-                    try:
-                        comment_obj = Comment.objects.get(id=getattr(obj, field_name))
-                        return comment_obj.content
-                    except Comment.DoesNotExist:
-                        pass
-
-            if obj.tweet and obj.actor:
-                latest_comment = (
-                    Comment.objects.filter(tweet=obj.tweet, author=obj.actor)
-                    .order_by("-created_at")
-                    .first()
-                )
-                if latest_comment:
-                    return latest_comment.content
-
-        # 2. Fallback para tweets normais (curtidas, retweets, posts)
+        # Curtidas, retweets e posts: texto do tweet
         if obj.tweet and obj.tweet.content:
             return obj.tweet.content
 
@@ -427,6 +422,9 @@ class NotificationSerializer(serializers.ModelSerializer):
         if obj.tweet:
             return obj.tweet.id
         return None
+
+    def get_comment_id(self, obj):
+        return obj.comment_id
 
 
 class FavoriteTweetSerializer(serializers.ModelSerializer):

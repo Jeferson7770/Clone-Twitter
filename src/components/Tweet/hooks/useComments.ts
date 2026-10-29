@@ -10,7 +10,12 @@ interface Options {
   onUpdate?: () => void;
 }
 
-// Helper para obter todos os IDs de comentários e respostas recursivamente (abre tudo)
+interface ScrollTarget {
+  id: string | number;
+  nonce: number;
+}
+
+// Todos os IDs de comentários e respostas (recursivo)
 function getAllCommentIds(comments: IComment[]): (string | number)[] {
   let ids: (string | number)[] = [];
   for (const comment of comments) {
@@ -22,7 +27,7 @@ function getAllCommentIds(comments: IComment[]): (string | number)[] {
   return ids;
 }
 
-// Helper para encontrar o ID do comentário mais recente (último a ser comentado)
+// Comentário mais recente da árvore (fallback)
 function getLatestCommentId(comments: IComment[]): string | number | null {
   if (!comments || comments.length === 0) return null;
   let latestId: string | number | null = null;
@@ -47,11 +52,49 @@ function getLatestCommentId(comments: IComment[]): string | number | null {
   return latestId;
 }
 
+// Comentário NOVO (que não existia antes) mais recente
+function getNewestNewCommentId(
+  comments: IComment[],
+  previousIds: Set<string>
+): string | number | null {
+  let newestId: string | number | null = null;
+  let newestTime = -1;
+
+  function traverse(list: IComment[]) {
+    for (const comment of list) {
+      if (!previousIds.has(String(comment.id))) {
+        const time = comment.created_at
+          ? new Date(comment.created_at).getTime()
+          : 0;
+        if (time >= newestTime) {
+          newestTime = time;
+          newestId = comment.id;
+        }
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        traverse(comment.replies);
+      }
+    }
+  }
+
+  traverse(comments);
+  return newestId;
+}
+
+// Eventos que indicam que o usuário assumiu o controle do scroll
+const USER_SCROLL_EVENTS = [
+  'wheel',
+  'touchmove',
+  'keydown',
+  'mousedown',
+] as const;
+
 export function useComments({ tweet, onUpdate }: Options) {
   const location = useLocation();
   const locationState = location.state as {
     highlightCommentId?: string | number;
     openComments?: boolean;
+    notifKey?: number;
   } | null;
 
   const [comments, setComments] = useState<IComment[]>(tweet.comments || []);
@@ -65,14 +108,39 @@ export function useComments({ tweet, onUpdate }: Options) {
   const [loadingList, setLoadingList] = useState(false);
 
   const notificationHighlightId = locationState?.highlightCommentId ?? null;
+  const notificationKey = locationState?.notifKey ?? 0;
   const openFromNotification = Boolean(locationState?.openComments);
 
-  // Alvo final: prioriza o ID da notificação, caso contrário usa o último comentário feito na árvore
-  const targetCommentId =
-    notificationHighlightId || getLatestCommentId(comments);
-  const highlightedCommentId = targetCommentId;
+  // Alvo do scroll/destaque. O nonce faz um novo clique na mesma notificação
+  // rolar de novo até o comentário.
+  const [scrollTarget, setScrollTarget] = useState<ScrollTarget | null>(
+    notificationHighlightId !== null
+      ? { id: notificationHighlightId, nonce: notificationKey }
+      : null
+  );
+  const [prevNotificationSig, setPrevNotificationSig] = useState(
+    `${notificationHighlightId}-${notificationKey}`
+  );
+  const notificationSig = `${notificationHighlightId}-${notificationKey}`;
+  if (notificationSig !== prevNotificationSig) {
+    setPrevNotificationSig(notificationSig);
+    if (notificationHighlightId !== null) {
+      setScrollTarget({ id: notificationHighlightId, nonce: notificationKey });
+    }
+  }
 
-  // Inicializa abrindo TODOS os comentários da árvore para garantir visibilidade total
+  const highlightedCommentId = scrollTarget?.id ?? null;
+
+  // Guarda qual alvo (id + nonce) já foi tratado (rolado ou cancelado pelo usuário)
+  const handledScrollKeyRef = useRef<string | null>(null);
+
+  // Sempre aponta para a lista mais recente
+  const commentsRef = useRef<IComment[]>(comments);
+  useEffect(() => {
+    commentsRef.current = comments;
+  }, [comments]);
+
+  // Abre TODOS os comentários da árvore para garantir visibilidade
   const [expandedComments, setExpandedComments] = useState<
     Record<string, boolean>
   >(() => {
@@ -87,26 +155,25 @@ export function useComments({ tweet, onUpdate }: Options) {
   const [manualOpen, setManualOpen] = useState(false);
   const [extraVisibleCount, setExtraVisibleCount] = useState(0);
 
-  const isSectionOpen =
-    Boolean(notificationHighlightId) || openFromNotification || manualOpen;
-  const visibleCount =
-    (Boolean(notificationHighlightId) || openFromNotification ? 200 : 3) +
-    extraVisibleCount;
+  const fromNotification =
+    notificationHighlightId !== null || openFromNotification;
 
-  // Função para buscar comentários na inicialização e em tempo real (polling)
+  const isSectionOpen = fromNotification || manualOpen;
+  const visibleCount = (fromNotification ? 200 : 3) + extraVisibleCount;
+
+  // Busca comentários na inicialização e em tempo real (polling)
   const fetchComments = useCallback(
-    async (isInitial = false) => {
+    async (isInitial = false): Promise<IComment[] | null> => {
       if (isInitial) setLoadingList(true);
       try {
         const response = await api.get(`tweets/${tweet.id}/`);
         if (response.data && response.data.comments) {
-          const fetchedComments = response.data.comments;
+          const fetchedComments: IComment[] = response.data.comments;
           setComments(fetchedComments);
           if (response.data.comments_count !== undefined) {
             setCommentsCount(response.data.comments_count);
           }
 
-          // Abre todos os comentários e respostas recebidas em tempo real
           const allIds = getAllCommentIds(fetchedComments);
           setExpandedComments((prev) => {
             const next = { ...prev };
@@ -115,9 +182,13 @@ export function useComments({ tweet, onUpdate }: Options) {
             });
             return next;
           });
+
+          return fetchedComments;
         }
+        return null;
       } catch (error) {
         console.error('Erro ao buscar comentários:', error);
+        return null;
       } finally {
         if (isInitial) setLoadingList(false);
       }
@@ -129,7 +200,7 @@ export function useComments({ tweet, onUpdate }: Options) {
 
   useEffect(() => {
     if (
-      (openFromNotification || Boolean(notificationHighlightId)) &&
+      fromNotification &&
       comments.length === 0 &&
       commentsCount > 0 &&
       !hasFetchedRef.current
@@ -137,15 +208,25 @@ export function useComments({ tweet, onUpdate }: Options) {
       hasFetchedRef.current = true;
       fetchComments(true);
     }
-  }, [
-    openFromNotification,
-    notificationHighlightId,
-    comments.length,
-    commentsCount,
-    fetchComments,
-  ]);
+  }, [fromNotification, comments.length, commentsCount, fetchComments]);
 
-  // Atualização em tempo real (Polling a cada 4 segundos se a seção estiver aberta)
+  // Se o comentário alvo ainda não está na árvore (comentário novo que veio
+  // pela notificação), busca imediatamente em vez de esperar o polling.
+  const fetchedForTargetRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const key = `${scrollTarget.id}-${scrollTarget.nonce}`;
+    if (fetchedForTargetRef.current === key) return;
+
+    const exists = getAllCommentIds(commentsRef.current)
+      .map(String)
+      .includes(String(scrollTarget.id));
+
+    fetchedForTargetRef.current = key;
+    if (!exists) fetchComments(false);
+  }, [scrollTarget, fetchComments]);
+
+  // Polling a cada 4s se a seção estiver aberta
   useEffect(() => {
     if (!isSectionOpen) return;
 
@@ -156,41 +237,77 @@ export function useComments({ tweet, onUpdate }: Options) {
     return () => clearInterval(intervalId);
   }, [isSectionOpen, fetchComments]);
 
-  // Efeito robusto para garantir o scroll suave até ao comentário alvo (notificação ou último comentário)
+  // Scroll até o comentário alvo: UMA vez por alvo (id + nonce); cancelado
+  // se o usuário rolar/tocar/digitar antes de o comentário ser encontrado.
   useEffect(() => {
-    if (!targetCommentId) return;
+    if (!scrollTarget) return;
 
+    const targetKey = String(scrollTarget.id);
+    const handledKey = `${targetKey}-${scrollTarget.nonce}`;
+    if (handledScrollKeyRef.current === handledKey) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 40;
+
+    function stop() {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      USER_SCROLL_EVENTS.forEach((eventName) =>
+        window.removeEventListener(eventName, onUserInterrupt, true)
+      );
+    }
+
+    function onUserInterrupt() {
+      handledScrollKeyRef.current = handledKey;
+      stop();
+    }
+
+    USER_SCROLL_EVENTS.forEach((eventName) =>
+      window.addEventListener(eventName, onUserInterrupt, {
+        capture: true,
+        passive: true,
+      })
+    );
 
     const tryScroll = () => {
-      const element = document.getElementById(`comment-${targetCommentId}`);
+      if (cancelled) return;
+
+      const element = document.getElementById(`comment-${targetKey}`);
 
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        const allIds = getAllCommentIds(comments);
-        if (allIds.length > 0) {
-          setExpandedComments((prev) => {
-            const next = { ...prev };
-            allIds.forEach((id) => {
-              next[String(id)] = true;
-            });
-            return next;
-          });
-        }
+        handledScrollKeyRef.current = handledKey;
+        stop();
+        return;
+      }
 
-        if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(tryScroll, 150);
-        }
+      // Ainda não renderizou: garante tudo expandido e tenta de novo
+      const allIds = getAllCommentIds(commentsRef.current);
+      if (allIds.length > 0) {
+        setExpandedComments((prev) => {
+          const next = { ...prev };
+          allIds.forEach((id) => {
+            next[String(id)] = true;
+          });
+          return next;
+        });
+      }
+
+      if (attempts < maxAttempts) {
+        attempts++;
+        timer = setTimeout(tryScroll, 150);
+      } else {
+        handledScrollKeyRef.current = handledKey;
+        stop();
       }
     };
 
-    const timer = setTimeout(tryScroll, 300);
+    timer = setTimeout(tryScroll, 300);
 
-    return () => clearTimeout(timer);
-  }, [targetCommentId, comments]);
+    return stop;
+  }, [scrollTarget]);
 
   // Sincroniza com as props quando o tweet pai é atualizado
   if (tweet.comments !== prevTweetComments) {
@@ -258,13 +375,28 @@ export function useComments({ tweet, onUpdate }: Options) {
   };
 
   const handleReplySubmitted = async (parentId?: IComment['id']) => {
+    const previousIds = new Set(
+      getAllCommentIds(commentsRef.current).map(String)
+    );
+
     if (parentId) {
       setExpandedComments((prev) => ({ ...prev, [String(parentId)]: true }));
     }
     setCommentsCount((prev) => prev + 1);
     setManualOpen(true);
 
-    await fetchComments(true);
+    const fetched = await fetchComments(false);
+
+    if (fetched) {
+      setExtraVisibleCount((prev) => Math.max(prev, fetched.length));
+
+      const newId =
+        getNewestNewCommentId(fetched, previousIds) ??
+        getLatestCommentId(fetched);
+
+      if (newId !== null) setScrollTarget({ id: newId, nonce: Date.now() });
+    }
+
     if (onUpdate) onUpdate();
   };
 

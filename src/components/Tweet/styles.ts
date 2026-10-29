@@ -414,7 +414,7 @@ export const CommentScrollArea = styled.div`
   flex-direction: column;
   overflow-y: auto;
   max-height: 350px;
-  padding: 0 16px;
+  padding: 0 8px;
 
   &::-webkit-scrollbar {
     display: none;
@@ -426,38 +426,59 @@ export const CommentScrollArea = styled.div`
 export const CommentSection = styled.div`
   margin-top: 0;
   border-top: none;
-  padding-top: 12px;
+  padding-top: 4px;
 `;
 
 export const CommentsList = styled.div`
   display: flex;
   flex-direction: column;
-  margin-top: 4px;
+  margin-top: 0;
 `;
 
-export const CommentItem = styled.div<{ $isHighlighted?: boolean }>`
+/**
+ * Comentário no padrão do X:
+ * - todos os comentários ficam no MESMO nível (sem recuo em cascata);
+ * - quando `$hasThread` é true, uma linha fina liga o avatar deste
+ *   comentário ao avatar do comentário seguinte (a "thread line").
+ */
+export const CommentItem = styled.div<{
+  $isHighlighted?: boolean;
+  $hasThread?: boolean;
+}>`
   display: flex;
   gap: 12px;
-  padding: 12px 8px;
+  padding: 12px 8px ${(props) => (props.$hasThread ? '0' : '12px')} 8px;
   position: relative;
-  border-bottom: 1px solid var(--outline);
   border-radius: 8px;
   transition: background-color 0.3s ease;
+
+  ${(props) =>
+    props.$hasThread &&
+    css`
+      &::before {
+        content: '';
+        position: absolute;
+        /* 8px (padding) + 19px (centro do avatar) - 1px (metade da linha) */
+        left: 26px;
+        /* 12px (padding) + 38px (avatar) + 4px (respiro) */
+        top: 54px;
+        /* chega até 4px acima do avatar do próximo comentário */
+        bottom: -8px;
+        width: 2px;
+        border-radius: 1px;
+        background: var(--outline);
+        pointer-events: none;
+      }
+    `}
 
   ${(props) =>
     props.$isHighlighted &&
     css`
       animation: ${highlightAnimation} 3.5s ease-out forwards;
-      border-left: 3px solid var(--twitter);
     `}
-
-  &:last-child {
-    border-bottom: none;
-  }
 
   &.is-reply {
     margin-left: 0;
-    border-bottom: none;
   }
 `;
 
@@ -470,6 +491,8 @@ export const CommentAvatar = styled.div<{ $avatarUrl?: string }>`
   background-size: cover;
   background-position: center;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
 
   ${(props) =>
     props.$avatarUrl &&
@@ -482,6 +505,7 @@ export const CommentContentContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
 
   > p {
     font-size: 14px;
@@ -515,7 +539,7 @@ export const CommentAuthorContainer = styled.div`
 
 export const CommentItemActions = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 32px;
   margin-top: 8px;
   color: var(--gray);
   font-size: 13px;
@@ -557,14 +581,67 @@ export const LikeCountSpan = styled.span`
   }
 `;
 
+/**
+ * Respostas (sub-comentários) no estilo LinkedIn:
+ * - recuam UMA vez em relação ao comentário principal (alinhadas ao texto dele);
+ * - cada resposta tem uma curva ligando ao avatar do comentário principal;
+ * - respostas de respostas (containers dentro de containers) NÃO recuam mais:
+ *   ficam alinhadas ao primeiro nível de resposta.
+ * (A prop `$isNested` foi mantida só para não quebrar o TSX existente.)
+ */
 export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
   display: flex;
   flex-direction: column;
-  margin-left: 19px;
-  padding-left: 20px;
-  border-left: 2px solid var(--outline);
-  margin-top: 4px;
-  margin-bottom: 8px;
+  /* 8px (padding) + 38px (avatar) + 12px (gap) = 58px  ->  58 - 8 = 50px */
+  margin: 0 0 0 50px;
+  padding: 0;
+  border: none;
+
+  /* níveis mais profundos continuam alinhados ao primeiro nível */
+  & & {
+    margin-left: 0;
+  }
+
+  /* avatares menores nas respostas */
+  ${CommentAvatar} {
+    width: 32px;
+    height: 32px;
+  }
+
+  ${CommentItem} {
+    /* linha vertical que continua até a próxima resposta */
+    &::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 28px;
+      bottom: 0;
+      width: 2px;
+      border-radius: 0;
+      background: var(--outline);
+      pointer-events: none;
+    }
+
+    /* a última resposta não continua a linha */
+    &:last-child::before {
+      content: none;
+    }
+
+    /* curva que liga a linha do comentário principal ao avatar da resposta */
+    &::after {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 0;
+      width: 30px;
+      height: 29px;
+      box-sizing: border-box;
+      border-left: 2px solid var(--outline);
+      border-bottom: 2px solid var(--outline);
+      border-bottom-left-radius: 12px;
+      pointer-events: none;
+    }
+  }
 `;
 
 export const ReplyingToTag = styled.div`
@@ -588,9 +665,14 @@ export const ToggleRepliesButton = styled.button`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 8px;
+  margin: 0 0 8px 58px; /* alinha com o texto do comentário (8 + 38 + 12) */
   padding: 4px 0;
   transition: color 0.2s;
+
+  /* dentro das respostas o avatar é de 32px (8 + 32 + 12) */
+  ${NestedRepliesContainer} & {
+    margin-left: 52px;
+  }
 
   .line {
     width: 24px;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 
 import Tweet, { type ITweetData } from '../Tweet';
@@ -17,6 +17,7 @@ import {
 const TweetPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [tweet, setTweet] = useState<ITweetData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -45,7 +46,19 @@ const TweetPage: React.FC = () => {
   }, [id]);
 
   const handleBack = () => {
-    navigate(-1);
+    // location.key === 'default' significa que a página foi aberta diretamente
+    // (link ou F5), sem histórico interno: voltar sairia da aplicação.
+    if (location.key !== 'default') {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  // Depois de apagar, a publicação deixa de existir: sai desta página
+  const handleDeleted = () => {
+    setTweet(null);
+    handleBack();
   };
 
   if (loading) {
@@ -72,7 +85,7 @@ const TweetPage: React.FC = () => {
         <HeaderTitle>Publicação</HeaderTitle>
       </Header>
 
-      <Tweet tweet={tweet} />
+      <Tweet tweet={tweet} onDelete={handleDeleted} />
     </Container>
   );
 };
