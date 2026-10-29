@@ -241,7 +241,7 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
               <ImagePreviewContainer>
                 <PreviewImage src={imagePreviewUrl} alt="Pré-visualização" />
                 <RemoveImageButton onClick={handleRemoveImage}>
-                  ×
+                  X
                 </RemoveImageButton>
               </ImagePreviewContainer>
             )}

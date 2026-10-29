@@ -122,13 +122,14 @@ export const RemoveImageButton = styled.button`
   position: absolute;
   top: 8px;
   left: 8px;
-  background-color: rgba(15, 20, 25, 0.75);
-  color: var(--white);
-  border: none;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +138,7 @@ export const RemoveImageButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: rgba(39, 44, 48, 0.9);
+    background-color: rgba(0, 0, 0, 0.9);
   }
 `;
 

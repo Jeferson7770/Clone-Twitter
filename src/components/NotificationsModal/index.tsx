@@ -63,17 +63,12 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Busca e polling em tempo real continuo (a cada 2.5s)
   useEffect(() => {
-    if (!isOpen) return;
-
     let isMounted = true;
 
-    api.post('/notifications/').catch((err) => {
-      console.error('Erro ao marcar notificações como lidas:', err);
-    });
-
     const fetchNotifications = (isInitial = false) => {
-      if (isInitial) setLoading(true);
+      if (isInitial && notifications.length === 0) setLoading(true);
 
       api
         .get('/notifications/')
@@ -92,13 +87,13 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
     fetchNotifications(true);
 
-    const intervalId = setInterval(() => fetchNotifications(false), 5000);
+    const intervalId = setInterval(() => fetchNotifications(false), 2500);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [isOpen]);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -106,7 +101,16 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     if (e.target === e.currentTarget) onClose();
   };
 
-  const handleNotificationClick = (notif: Notification) => {
+  const handleNotificationClick = async (notif: Notification) => {
+    // Se não estiver lida, envia requisição para marcar individualmente ou geral
+    if (notif.is_read === false) {
+      try {
+        await api.post(`/notifications/${notif.id}/read/`);
+      } catch {
+        api.post('/notifications/').catch(() => {});
+      }
+    }
+
     const targetTweetId = notif.tweet_id || notif.tweet;
     const targetCommentId =
       notif.comment_id || notif.comment || notif.object_id || notif.target_id;
@@ -114,13 +118,19 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
     onClose();
 
-    if (notif.type === 'follow' && actorUsername) {
+    if (notif.type === 'follow' && actorUsername && !targetTweetId) {
       navigate(`/profile/${actorUsername}`);
-    } else if (targetTweetId) {
-      const isCommentNotification =
-        notif.type === 'comment' || Boolean(targetCommentId);
+      return;
+    }
 
-      if (isCommentNotification) {
+    if (targetTweetId) {
+      const isCommentOrReply =
+        notif.type === 'comment' ||
+        Boolean(targetCommentId) ||
+        notif.type === 'like' ||
+        notif.type === 'retweet';
+
+      if (isCommentOrReply) {
         navigate(`/status/${targetTweetId}`, {
           state: {
             fromNotification: true,

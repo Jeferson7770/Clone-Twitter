@@ -125,13 +125,20 @@ export const RemoveImageButton = styled.button`
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(
+    0,
+    0,
+    0,
+    0.75
+  ); 
   color: #fff;
   border: none;
   border-radius: 50%;
   width: 30px;
   height: 30px;
   font-size: 16px;
+  font-weight: bold; 
+  border: 1px solid rgba(255, 255, 255, 0.2); 
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -142,6 +149,7 @@ export const RemoveImageButton = styled.button`
     background: rgba(0, 0, 0, 0.9);
   }
 `;
+
 
 export const ActionArea = styled.div`
   display: flex;

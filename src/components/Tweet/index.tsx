@@ -30,7 +30,6 @@ import TweetHeader from './components/TweetHeader';
 import TweetMedia from './components/TweetMedia';
 import UsersModal from './components/UsersModal';
 
-// Mantém os imports antigos funcionando
 export type { IComment, ILikedUser, ITweetData } from './types';
 
 interface TweetProps {
@@ -48,7 +47,6 @@ const Tweet = ({ tweet, onDelete, onUpdate }: TweetProps) => {
 
   const commentSectionRef = useRef<HTMLDivElement>(null);
 
-  // --- lógica (cada hook cuida de uma parte) ---
   const menus = useTweetMenus();
   const tweetDelete = useTweetDelete({ tweetId: tweet.id, isOwner, onDelete });
   const like = useTweetLike(tweet, onUpdate);
@@ -60,14 +58,12 @@ const Tweet = ({ tweet, onDelete, onUpdate }: TweetProps) => {
     onSubmitted: comments.handleReplySubmitted,
   });
 
-  // Clicar fora da seção de comentários fecha a seção
   useClickOutside(
     [commentSectionRef, menus.commentMenuRef],
     comments.closeSection,
     comments.isSectionOpen
   );
 
-  // --- handlers que misturam mais de um hook ---
   const handleUserClick = (e: MouseEvent, username: string) => {
     e.stopPropagation();
     navigate(`/profile/${username}`);
@@ -158,7 +154,7 @@ const Tweet = ({ tweet, onDelete, onUpdate }: TweetProps) => {
               menuRef={menus.retweetMenuRef}
               count={retweet.retweetsCount}
               isRetweeted={retweet.isRetweeted}
-              hasQuoted={retweet.hasQuoted} // <-- Usando diretamente do hook useRetweet
+              hasQuoted={retweet.hasQuoted}
               isMenuOpen={menus.openMenu === 'retweet'}
               onToggleMenu={handleRetweetMenuToggle}
               onRetweet={retweet.handleStandardRetweet}
