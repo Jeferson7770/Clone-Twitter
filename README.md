@@ -1,4 +1,4 @@
-# 🐦 Twitter Clone (Fullstack)
+# Twitter Clone (Fullstack)
 
 Um clone completo do Twitter desenvolvido como aplicação *fullstack*, apresentando uma API robusta em Django REST Framework e uma interface moderna e tipada em React com TypeScript e Vite.
 
