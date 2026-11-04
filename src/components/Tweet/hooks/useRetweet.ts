@@ -12,10 +12,6 @@ interface Options {
   closeMenu: () => void;
 }
 
-/**
- * Tudo sobre retweet: retweet simples, retweet com comentário (quote)
- * e o modal "Retuitado por".
- */
 export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
   const { user } = useAuth();
 
@@ -75,7 +71,7 @@ export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
       });
 
       setRetweetsCount((prev) => prev + 1);
-      setHasQuoted(true); // <-- Marca como citado para bloquear novas ações de retweet/quote
+      setHasQuoted(true); 
 
       if (user) {
         setRetweetedByUsers((prev) => prependUserIfMissing(prev, user));
@@ -121,7 +117,7 @@ export function useRetweet({ tweet, onUpdate, closeMenu }: Options) {
   return {
     retweetsCount,
     isRetweeted,
-    hasQuoted, // <-- Expor a propriedade no retorno do hook
+    hasQuoted, 
     handleStandardRetweet,
     quote: {
       isOpen: isQuoteOpen,

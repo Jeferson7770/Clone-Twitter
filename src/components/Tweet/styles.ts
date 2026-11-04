@@ -435,12 +435,6 @@ export const CommentsList = styled.div`
   margin-top: 0;
 `;
 
-/**
- * Comentário no padrão do X:
- * - todos os comentários ficam no MESMO nível (sem recuo em cascata);
- * - quando `$hasThread` é true, uma linha fina liga o avatar deste
- *   comentário ao avatar do comentário seguinte (a "thread line").
- */
 export const CommentItem = styled.div<{
   $isHighlighted?: boolean;
   $hasThread?: boolean;
@@ -458,11 +452,8 @@ export const CommentItem = styled.div<{
       &::before {
         content: '';
         position: absolute;
-        /* 8px (padding) + 19px (centro do avatar) - 1px (metade da linha) */
         left: 26px;
-        /* 12px (padding) + 38px (avatar) + 4px (respiro) */
         top: 54px;
-        /* chega até 4px acima do avatar do próximo comentário */
         bottom: -8px;
         width: 2px;
         border-radius: 1px;
@@ -581,35 +572,23 @@ export const LikeCountSpan = styled.span`
   }
 `;
 
-/**
- * Respostas (sub-comentários) no estilo LinkedIn:
- * - recuam UMA vez em relação ao comentário principal (alinhadas ao texto dele);
- * - cada resposta tem uma curva ligando ao avatar do comentário principal;
- * - respostas de respostas (containers dentro de containers) NÃO recuam mais:
- *   ficam alinhadas ao primeiro nível de resposta.
- * (A prop `$isNested` foi mantida só para não quebrar o TSX existente.)
- */
 export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
   display: flex;
   flex-direction: column;
-  /* 8px (padding) + 38px (avatar) + 12px (gap) = 58px  ->  58 - 8 = 50px */
   margin: 0 0 0 50px;
   padding: 0;
   border: none;
 
-  /* níveis mais profundos continuam alinhados ao primeiro nível */
   & & {
     margin-left: 0;
   }
 
-  /* avatares menores nas respostas */
   ${CommentAvatar} {
     width: 32px;
     height: 32px;
   }
 
   ${CommentItem} {
-    /* linha vertical que continua até a próxima resposta */
     &::before {
       content: '';
       position: absolute;
@@ -622,12 +601,10 @@ export const NestedRepliesContainer = styled.div<{ $isNested?: boolean }>`
       pointer-events: none;
     }
 
-    /* a última resposta não continua a linha */
     &:last-child::before {
       content: none;
     }
 
-    /* curva que liga a linha do comentário principal ao avatar da resposta */
     &::after {
       content: '';
       position: absolute;

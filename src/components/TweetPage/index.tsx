@@ -46,8 +46,6 @@ const TweetPage: React.FC = () => {
   }, [id]);
 
   const handleBack = () => {
-    // location.key === 'default' significa que a página foi aberta diretamente
-    // (link ou F5), sem histórico interno: voltar sairia da aplicação.
     if (location.key !== 'default') {
       navigate(-1);
     } else {
@@ -55,7 +53,6 @@ const TweetPage: React.FC = () => {
     }
   };
 
-  // Depois de apagar, a publicação deixa de existir: sai desta página
   const handleDeleted = () => {
     setTweet(null);
     handleBack();

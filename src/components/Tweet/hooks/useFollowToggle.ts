@@ -3,7 +3,6 @@ import type { Dispatch, MouseEvent, SetStateAction } from 'react';
 import { api } from '../../../services/api';
 import type { ILikedUser } from '../types';
 
-/** Seguir / deixar de seguir um usuário dentro de uma lista (curtidas, retweets...). */
 export function useFollowToggle(
   setUsers: Dispatch<SetStateAction<ILikedUser[]>>
 ) {

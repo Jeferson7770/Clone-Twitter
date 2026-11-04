@@ -3,10 +3,6 @@ import { useClickOutside } from './useClickOutside';
 
 export type TweetMenu = 'comment' | 'retweet';
 
-/**
- * Controla os dropdowns da barra de ações (comentar / retweetar).
- * Só um fica aberto por vez e ambos fecham ao clicar fora.
- */
 export function useTweetMenus() {
   const [openMenu, setOpenMenu] = useState<TweetMenu | null>(null);
 

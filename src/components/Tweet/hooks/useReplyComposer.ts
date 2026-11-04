@@ -5,11 +5,9 @@ import type { IComment, ITweetData } from '../types';
 
 interface Options {
   tweetId: ITweetData['id'];
-  /** Chamado após o POST dar certo (ex.: atualizar contagem e recarregar comentários). */
   onSubmitted: (parentId?: IComment['id']) => Promise<void> | void;
 }
 
-/** Estado do modal de resposta (ao tweet ou a um comentário) e envio do formulário. */
 export function useReplyComposer({ tweetId, onSubmitted }: Options) {
   const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState('');

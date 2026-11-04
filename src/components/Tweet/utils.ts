@@ -21,7 +21,6 @@ export const formatTweetDate = (createdAt: string) =>
     month: 'short',
   });
 
-/** Retorna os ids dos pais que precisam estar expandidos para mostrar `targetId`. */
 export const findParentsToExpand = (
   list: IComment[],
   targetId: string | number,
@@ -75,7 +74,6 @@ export const toggleLikeInTree = (
     return comment;
   });
 
-/** Converte o usuário logado no formato usado nas listas de usuários. */
 export const toLikedUser = (user: AuthUser): ILikedUser => ({
   id: user.id || '',
   username: user.username,

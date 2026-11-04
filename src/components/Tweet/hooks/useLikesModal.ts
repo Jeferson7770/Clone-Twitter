@@ -4,7 +4,6 @@ import { api } from '../../../services/api';
 import type { ILikedUser, ITweetData } from '../types';
 import { useFollowToggle } from './useFollowToggle';
 
-/** Modal "Curtido por" — serve tanto para curtidas do tweet quanto de um comentário. */
 export function useLikesModal(tweet: Pick<ITweetData, 'id' | 'liked_by'>) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('Curtido por');

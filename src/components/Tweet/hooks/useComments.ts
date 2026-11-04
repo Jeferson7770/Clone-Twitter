@@ -309,7 +309,6 @@ export function useComments({ tweet, onUpdate }: Options) {
     return stop;
   }, [scrollTarget]);
 
-  // Sincroniza com as props quando o tweet pai é atualizado
   if (tweet.comments !== prevTweetComments) {
     setPrevTweetComments(tweet.comments);
     setComments(tweet.comments || []);
