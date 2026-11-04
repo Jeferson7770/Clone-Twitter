@@ -14,7 +14,7 @@ Um clone completo do Twitter desenvolvido como aplicação *fullstack*, apresent
 * **Gerenciamento de Estáticos:** WhiteNoise
 * **Outros:** `dj-database-url`, `django-cors-headers`
 
-### **Frontend (Cliente)**
+### **Frontend **
 * **React** com **TypeScript**
 * **Bundler:** **Vite**
 * **Estilização:** Styled Components
@@ -51,11 +51,11 @@ Twitter/
 │   └── main.tsx
 ├── public/                 # Recursos públicos e favicon
 └── README.md
----
 
-## 🛠️ Clonar o Repositório
+# 🛠️ Clonar o Repositório
 
-git clone [https://github.com/Jeferson7770/Clone-Twitter.git](https://github.com/Jeferson7770/Clone-Twitter.git)
+git clone [https://github.com/Jeferson7770/Clone-Twitter.git]
+
 cd Clone-Twitter
 
 
