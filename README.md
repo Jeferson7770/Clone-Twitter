@@ -1,75 +1,92 @@
-# React + TypeScript + Vite
+# 🐦 Twitter Clone (Fullstack)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um clone completo do Twitter desenvolvido como aplicação *fullstack*, apresentando uma API robusta em Django REST Framework e uma interface moderna e tipada em React com TypeScript e Vite.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tecnologias Utilizadas
 
-## React Compiler
+### **Backend (API)**
+* **Python 3.14** & **Django 6.0** / **Django REST Framework (DRF)**
+* **Autenticação:** JSON Web Tokens (`djangorestframework-simplejwt`)
+* **Banco de Dados:** PostgreSQL (Produção/Render) / SQLite (Desenvolvimento local)
+* **Armazenamento de Mídia:** **Cloudinary** (para gestão persistente de fotos de perfil e uploads)
+* **Gerenciamento de Estáticos:** WhiteNoise
+* **Outros:** `dj-database-url`, `django-cors-headers`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### **Frontend (Cliente)**
+* **React** com **TypeScript**
+* **Bundler:** **Vite**
+* **Estilização:** Styled Components
+* **Comunicação HTTP:** Axios
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ✨ Funcionalidades Principais
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+* **Autenticação Segura:** Cadastro, login, renovação de tokens (JWT) e recuperação de senha.
+* **Gerenciamento de Perfil:** Atualização de dados de usuário e upload de imagem de perfil integrada com a nuvem (Cloudinary).
+* **Feed de Tweets:** Criação, visualização, exclusão, curtidas, *retweets* e tweets citados.
+* **Interatividade Avançada:** Seção de comentários em árvore, modais de usuários e seções dinâmicas.
+* **Notificações & Mensagens:** Contadores em tempo real e abas dedicadas.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📁 Estrutura do Projeto
 
-```
+```text
+Twitter/
+├── backend/                # Servidor Django (API)
+│   ├── api/                # Modelos, views, serializers e rotas da API
+│   ├── setup/              # Configurações globais do Django (settings.py, urls.py)
+│   ├── requirements.txt    # Dependências Python de produção
+│   └── manage.py
+├── src/                    # Código-fonte Frontend (React + TS)
+│   ├── components/         # Componentes reutilizáveis (Sidebar, Feed, Tweet, Modais)
+│   ├── pages/              # Páginas da aplicação (Auth, ProfilePage, Messages, Settings, etc.)
+│   ├── hooks/              # Custom hooks (Autenticação, interações de tweets)
+│   ├── services/           # Configuração do Axios e serviços de API
+│   ├── styles/             # Temas globais e estilos (GlobalStyles, themes, Icons)
+│   ├── App.tsx
+│   └── main.tsx
+├── public/                 # Recursos públicos e favicon
+└── README.md
+---
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## 🛠️ Clonar o Repositório
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+git clone [https://github.com/Jeferson7770/Clone-Twitter.git](https://github.com/Jeferson7770/Clone-Twitter.git)
+cd Clone-Twitter
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 
-```
+# Entrar no diretório da aplicação frontend
+cd twitter
+
+# Instalar as dependências
+yarn install
+# (ou npm install)
+
+# Iniciar o servidor de desenvolvimento
+yarn dev
+# (ou npm run dev)
+
+# Entrar no diretório do backend
+cd backend
+
+# Criar e ativar o ambiente virtual
+python -m venv venv
+
+# No Windows:
+venv\Scripts\activate
+# No macOS/Linux:
+source venv/bin/activate
+
+# Instalar as dependências
+pip install -r requirements.txt
+
+# Executar as migrações do banco de dados
+python manage.py migrate
+
+# Iniciar o servidor de desenvolvimento
+python manage.py runserver
+
