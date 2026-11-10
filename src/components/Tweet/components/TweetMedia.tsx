@@ -6,13 +6,10 @@ import ImageLightbox from './ImageLightbox';
 interface TweetMediaProps {
   media: string;
   mediaType?: 'image' | 'video';
-  /** Clicar na imagem abre o lightbox (tweet principal). */
   expandable?: boolean;
-  /** Impede que o clique suba para o card pai (tweet citado). */
   stopPropagation?: boolean;
 }
 
-/** Imagem ou vídeo de um tweet, comentário ou tweet citado. */
 const TweetMedia = ({
   media,
   mediaType,

@@ -21,7 +21,6 @@ interface UsersModalProps {
   onToggleFollow: (e: MouseEvent, user: ILikedUser) => void;
 }
 
-/** Modal genérico com lista de usuários — usado em "Curtido por" e "Retuitado por". */
 const UsersModal = ({
   title,
   users,

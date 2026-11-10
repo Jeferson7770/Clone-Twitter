@@ -63,11 +63,8 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // IDs marcados como lidos localmente (ref: não dispara novo fetch)
   const locallyReadIdsRef = useRef<Set<string>>(new Set());
 
-  // Contador incrementado a cada clique: gera um notifKey único
-  // sem função impura (Date.now) e permite rolar de novo ao mesmo comentário
   const clickCounterRef = useRef(0);
 
   useEffect(() => {
@@ -101,21 +98,17 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
               (item.type === 'comment' ? item.object_id : null) ??
               null;
 
-            // Assinatura baseada no ALVO, não no texto
             let signature: string;
             if (commentId !== null) {
-              // Mesmo autor + tipo + mesmo comentário = notificação repetida
               signature = `${item.type}-${actor}-comment-${commentId}`;
             } else if (
               (item.type === 'like' || item.type === 'retweet') &&
               tweetId !== null
             ) {
-              // Mesma curtida/retweet do mesmo autor no mesmo tweet
               signature = `${item.type}-${actor}-tweet-${tweetId}`;
             } else if (item.type === 'follow') {
               signature = `follow-${actor}`;
             } else {
-              // Sem informação suficiente: não arrisca esconder nada
               signature = `id-${idKey}`;
             }
 
@@ -129,12 +122,8 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
             );
           });
 
-          // A lista guardada no estado mantém is_read=false (as bolinhas
-          // continuam visíveis enquanto o modal está aberto)
           setNotifications(uniqueList);
 
-          // Marca tudo como lido no servidor, para o contador do menu
-          // refletir o valor real no próximo polling
           if (dataList.some((n: Notification) => n.is_read === false)) {
             api.post('/notifications/').catch(() => {});
           }
@@ -168,7 +157,6 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
       )
     );
 
-    // Marca como lida no backend sem bloquear a navegação
     api
       .post(`/notifications/${notif.id}/read/`)
       .catch(() =>
@@ -180,10 +168,6 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
     const targetTweetId = notif.tweet_id ?? notif.tweet ?? null;
     const actorUsername = notif.user?.username || notif.actor?.username;
 
-    // ID do comentário exato:
-    // - 'comment': comentário novo (comment_id / comment / object_id)
-    // - 'like'/'retweet': só se o backend mandar um comment explícito
-    //   (object_id/target_id nesses casos costuma ser o ID do tweet)
     let targetCommentId: string | number | null = null;
     if (notif.type === 'comment') {
       targetCommentId =
@@ -207,7 +191,6 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
             fromNotification: true,
             openComments: true,
             highlightCommentId: targetCommentId ?? undefined,
-            // Muda a cada clique: permite rolar de novo para o mesmo comentário
             notifKey: clickCounterRef.current,
           },
         });
@@ -253,9 +236,9 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 
         <ScrollableContent>
           {loading ? (
-            <LoadingState>A carregar...</LoadingState>
+            <LoadingState>Carregando...</LoadingState>
           ) : notifications.length === 0 ? (
-            <EmptyState>Sem notificações de momento.</EmptyState>
+            <EmptyState>Nenhuma notificação no momento.</EmptyState>
           ) : (
             notifications.map((notif, index) => {
               const username =
@@ -316,17 +299,17 @@ const NotificationsModal: React.FC<NotificationModalProps> = ({
 function getNotificationText(type: string): string {
   switch (type) {
     case 'like':
-      return 'gostou do seu tweet.';
+      return 'curtiu o seu tweet.';
     case 'comment':
       return 'respondeu ao seu tweet.';
     case 'retweet':
       return 'retweetou o seu tweet.';
     case 'follow':
-      return 'começou a segui-lo.';
+      return 'começou a seguir você.';
     case 'post':
       return 'publicou um novo tweet.';
     default:
-      return 'interagiu consigo.';
+      return 'interagiu com você.';
   }
 }
 

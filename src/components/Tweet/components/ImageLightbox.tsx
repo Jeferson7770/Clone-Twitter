@@ -10,7 +10,6 @@ interface ImageLightboxProps {
   onClose: () => void;
 }
 
-/** Imagem ampliada em tela cheia. */
 const ImageLightbox = ({ src, onClose }: ImageLightboxProps) => (
   <ImageModalOverlay onClick={onClose}>
     <ModalContentBox onClick={(e) => e.stopPropagation()}>

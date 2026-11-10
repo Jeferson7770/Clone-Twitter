@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import {
-  EditButton, // Importe o EditButton aqui
+  EditButton, 
   LikeUserAvatar,
   LikeUserInfo,
   LikeUserInner,
@@ -16,7 +16,6 @@ interface UserListItemProps {
   onToggleFollow: (e: MouseEvent, user: ILikedUser) => void;
 }
 
-/** Linha de usuário nos modais (avatar, nome e botão Seguir/Seguindo). */
 const UserListItem = ({
   user,
   isMe,
@@ -41,7 +40,7 @@ const UserListItem = ({
       <EditButton
         $outlined={!user.is_following}
         onClick={(e) => {
-          e.stopPropagation(); // Evita que o clique no botão dispare o onSelect do container
+          e.stopPropagation();
           onToggleFollow(e, user);
         }}
       >

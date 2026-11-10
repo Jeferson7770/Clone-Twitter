@@ -642,11 +642,10 @@ export const ToggleRepliesButton = styled.button`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 0 8px 58px; /* alinha com o texto do comentário (8 + 38 + 12) */
+  margin: 0 0 8px 58px; 
   padding: 4px 0;
   transition: color 0.2s;
 
-  /* dentro das respostas o avatar é de 32px (8 + 32 + 12) */
   ${NestedRepliesContainer} & {
     margin-left: 52px;
   }

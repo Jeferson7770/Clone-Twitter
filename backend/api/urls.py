@@ -9,10 +9,11 @@ from api.views import (
     UserViewSet,
     NotificationListView,
     UnreadNotificationCountView,
-    NotificationReadView, 
+    NotificationReadView,
     MessageViewSet,
     PasswordResetRequestView,
     PasswordResetConfirmView,
+    ChangePasswordView,  # <--- Importação adicionada aqui
     HashtagDetailView,
     HashtagAutocompleteView,
     TrendingHashtagsView,
@@ -29,6 +30,9 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("me/", MeView.as_view(), name="me"),
     path(
+        "change-password/", ChangePasswordView.as_view(), name="change-password"
+    ),  # <--- Rota de alteração de senha adicionada aqui
+    path(
         "password-reset/",
         PasswordResetRequestView.as_view(),
         name="password_reset_request",
@@ -43,7 +47,7 @@ urlpatterns = [
         "notifications/<int:pk>/read/",
         NotificationReadView.as_view(),
         name="notification-read",
-    ),  # 👈 2. Adicione esta rota exata para o endpoint deixar de dar 404
+    ),
     path(
         "notifications/unread_count/",
         UnreadNotificationCountView.as_view(),

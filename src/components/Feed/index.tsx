@@ -119,8 +119,6 @@ const Feed: React.FC<FeedProps> = ({ username, hashtag }) => {
     return () => controller.abort();
   }, [username, hashtag, sortBy]);
 
-  // Remove pelo id do tweet (e não pelo unique_id): assim também somem da lista
-  // as cópias de retweet (rt_...) do tweet apagado, que o backend apaga em cascata.
   const handleDeleteTweet = (deletedId: string | number) => {
     setTweets((prevTweets) =>
       prevTweets.filter((t) => String(t.id) !== String(deletedId))

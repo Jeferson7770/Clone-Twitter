@@ -17,7 +17,6 @@ interface TweetHeaderProps {
   onDeleteClick: (e: MouseEvent) => void;
 }
 
-/** Nome, @usuário, data e botão de excluir (só para o dono). */
 const TweetHeader = ({
   author,
   formattedDate,

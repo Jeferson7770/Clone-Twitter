@@ -385,11 +385,9 @@ class NotificationSerializer(serializers.ModelSerializer):
         }
 
     def get_text(self, obj):
-        # Curtida num comentário (e não num tweet)
         if obj.type == "like" and obj.comment_id:
             return "curtiu seu comentário"
 
-        # Resposta a outro comentário (e não comentário direto no tweet)
         if obj.type == "comment" and obj.comment_id and obj.comment.parent_id:
             return "respondeu ao seu comentário"
 
@@ -403,16 +401,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         return texts.get(obj.type, "interagiu com você")
 
     def get_content(self, obj):
-        # Comentário (resposta) ou curtida em comentário: mostra o texto EXATO
-        # do comentário ligado a esta notificação.
         if obj.comment_id and obj.type in ("comment", "like"):
             return obj.comment.content
 
         if obj.type == "comment":
-            # Notificação antiga, criada antes do campo "comment" existir
             return None
 
-        # Curtidas, retweets e posts: texto do tweet
         if obj.tweet and obj.tweet.content:
             return obj.tweet.content
 
@@ -454,3 +448,8 @@ class TrendingHashtagSerializer(serializers.Serializer):
     nome = serializers.CharField()
     usos_recentes = serializers.IntegerField()
     score_tendencia = serializers.FloatField()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)

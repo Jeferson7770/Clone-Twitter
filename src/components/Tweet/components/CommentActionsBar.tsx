@@ -18,7 +18,6 @@ interface CommentActionsBarProps {
   onDelete: (e: MouseEvent, commentId: IComment['id']) => void;
 }
 
-/** Responder, curtir e excluir (só dono) de um comentário. */
 const CommentActionsBar = ({
   comment,
   isOwner,

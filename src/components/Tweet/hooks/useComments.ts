@@ -15,7 +15,6 @@ interface ScrollTarget {
   nonce: number;
 }
 
-// Todos os IDs de comentários e respostas (recursivo)
 function getAllCommentIds(comments: IComment[]): (string | number)[] {
   let ids: (string | number)[] = [];
   for (const comment of comments) {
@@ -27,7 +26,6 @@ function getAllCommentIds(comments: IComment[]): (string | number)[] {
   return ids;
 }
 
-// Comentário mais recente da árvore (fallback)
 function getLatestCommentId(comments: IComment[]): string | number | null {
   if (!comments || comments.length === 0) return null;
   let latestId: string | number | null = null;
@@ -52,7 +50,6 @@ function getLatestCommentId(comments: IComment[]): string | number | null {
   return latestId;
 }
 
-// Comentário NOVO (que não existia antes) mais recente
 function getNewestNewCommentId(
   comments: IComment[],
   previousIds: Set<string>
@@ -81,7 +78,6 @@ function getNewestNewCommentId(
   return newestId;
 }
 
-// Eventos que indicam que o usuário assumiu o controle do scroll
 const USER_SCROLL_EVENTS = [
   'wheel',
   'touchmove',
@@ -111,8 +107,6 @@ export function useComments({ tweet, onUpdate }: Options) {
   const notificationKey = locationState?.notifKey ?? 0;
   const openFromNotification = Boolean(locationState?.openComments);
 
-  // Alvo do scroll/destaque. O nonce faz um novo clique na mesma notificação
-  // rolar de novo até o comentário.
   const [scrollTarget, setScrollTarget] = useState<ScrollTarget | null>(
     notificationHighlightId !== null
       ? { id: notificationHighlightId, nonce: notificationKey }
@@ -131,16 +125,13 @@ export function useComments({ tweet, onUpdate }: Options) {
 
   const highlightedCommentId = scrollTarget?.id ?? null;
 
-  // Guarda qual alvo (id + nonce) já foi tratado (rolado ou cancelado pelo usuário)
   const handledScrollKeyRef = useRef<string | null>(null);
 
-  // Sempre aponta para a lista mais recente
   const commentsRef = useRef<IComment[]>(comments);
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
 
-  // Abre TODOS os comentários da árvore para garantir visibilidade
   const [expandedComments, setExpandedComments] = useState<
     Record<string, boolean>
   >(() => {
@@ -161,7 +152,6 @@ export function useComments({ tweet, onUpdate }: Options) {
   const isSectionOpen = fromNotification || manualOpen;
   const visibleCount = (fromNotification ? 200 : 3) + extraVisibleCount;
 
-  // Busca comentários na inicialização e em tempo real (polling)
   const fetchComments = useCallback(
     async (isInitial = false): Promise<IComment[] | null> => {
       if (isInitial) setLoadingList(true);
@@ -210,8 +200,6 @@ export function useComments({ tweet, onUpdate }: Options) {
     }
   }, [fromNotification, comments.length, commentsCount, fetchComments]);
 
-  // Se o comentário alvo ainda não está na árvore (comentário novo que veio
-  // pela notificação), busca imediatamente em vez de esperar o polling.
   const fetchedForTargetRef = useRef<string | null>(null);
   useEffect(() => {
     if (!scrollTarget) return;
@@ -226,7 +214,6 @@ export function useComments({ tweet, onUpdate }: Options) {
     if (!exists) fetchComments(false);
   }, [scrollTarget, fetchComments]);
 
-  // Polling a cada 4s se a seção estiver aberta
   useEffect(() => {
     if (!isSectionOpen) return;
 
@@ -237,8 +224,6 @@ export function useComments({ tweet, onUpdate }: Options) {
     return () => clearInterval(intervalId);
   }, [isSectionOpen, fetchComments]);
 
-  // Scroll até o comentário alvo: UMA vez por alvo (id + nonce); cancelado
-  // se o usuário rolar/tocar/digitar antes de o comentário ser encontrado.
   useEffect(() => {
     if (!scrollTarget) return;
 
@@ -283,7 +268,6 @@ export function useComments({ tweet, onUpdate }: Options) {
         return;
       }
 
-      // Ainda não renderizou: garante tudo expandido e tenta de novo
       const allIds = getAllCommentIds(commentsRef.current);
       if (allIds.length > 0) {
         setExpandedComments((prev) => {

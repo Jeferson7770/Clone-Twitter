@@ -29,6 +29,7 @@ from .models import (
 )
 from .serializers import (
     BookmarkSerializer,
+    ChangePasswordSerializer,
     CommentSerializer,
     FavoriteTweetSerializer,
     HashtagSerializer,
@@ -41,6 +42,31 @@ from .serializers import (
     TweetSerializer,
     UserSerializer,
 )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            # Valida se a palavra-passe atual está correta
+            if not user.check_password(serializer.validated_data.get("old_password")):
+                return Response(
+                    {"old_password": ["A palavra-passe atual está incorreta."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Define e guarda a nova palavra-passe encriptada
+            user.set_password(serializer.validated_data.get("new_password"))
+            user.save()
+            return Response(
+                {"detail": "Palavra-passe alterada com sucesso."},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegisterView(generics.CreateAPIView):

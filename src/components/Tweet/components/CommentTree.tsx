@@ -4,7 +4,6 @@ import { NestedRepliesContainer } from '../styles';
 import type { IComment } from '../types';
 import CommentRow from './CommentRow';
 
-/** Props compartilhadas por todos os níveis da árvore de comentários. */
 export interface CommentTreeSharedProps {
   expandedComments: Record<string | number, boolean>;
   highlightedCommentId: IComment['id'] | null;
@@ -22,7 +21,6 @@ interface CommentTreeProps extends CommentTreeSharedProps {
   isNested?: boolean;
 }
 
-/** Lista de comentários com respostas aninhadas (recursivo). */
 const CommentTree = ({
   comments,
   isNested = false,

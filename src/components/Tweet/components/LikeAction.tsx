@@ -8,7 +8,6 @@ interface LikeActionProps {
   onOpenLikes: (e: MouseEvent) => void;
 }
 
-/** Coração + contador. Clicar no coração curte; clicar no número abre a lista. */
 const LikeAction = ({ count, isLiked, onLike, onOpenLikes }: LikeActionProps) => (
   <Status className={isLiked ? 'active-like' : ''} $isLiked={isLiked}>
     <LikeIcon onClick={onLike} $isLiked={isLiked} />

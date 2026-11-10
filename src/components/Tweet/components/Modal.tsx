@@ -6,7 +6,6 @@ interface ModalProps {
   children: ReactNode;
 }
 
-/** Fundo escurecido que fecha o modal ao clicar fora do conteúdo. */
 const Modal = ({ onClose, children }: ModalProps) => (
   <ModalOverlay
     onClick={(e) => {

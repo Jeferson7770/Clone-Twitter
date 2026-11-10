@@ -20,7 +20,6 @@ interface CommentsSectionProps {
   treeProps: CommentTreeSharedProps;
 }
 
-/** Área expansível com a lista de comentários, estados de loading/vazio e "Ver mais". */
 const CommentsSection = ({
   containerRef,
   comments,

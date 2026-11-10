@@ -15,7 +15,6 @@ interface QuotedTweetProps {
   onUserClick: (e: MouseEvent, username: string) => void;
 }
 
-/** Card do tweet citado (retweet com comentário). */
 const QuotedTweet = ({ tweet, onOpen, onUserClick }: QuotedTweetProps) => {
   const { author } = tweet;
 

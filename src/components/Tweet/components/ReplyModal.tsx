@@ -31,7 +31,6 @@ interface ReplyModalProps {
   onClose: () => void;
 }
 
-/** Modal de resposta exibindo o tweet/comentário e o tweet citado aninhado, se existir. */
 const ReplyModal = ({
   tweet,
   replyingTo,
@@ -46,13 +45,11 @@ const ReplyModal = ({
 
   const isReplyingToComment = replyingTo !== null;
 
-  // Se estiver a responder a um comentário, o alvo é o comentário; caso contrário, é o tweet.
   const target = replyingTo ?? tweet;
 
   const targetName = target?.author?.first_name || target?.author?.username;
   const targetUsername = target?.author?.username;
 
-  // Verifica se o alvo é um tweet com citação/retweet aninhado
   const quotedTweetData = !isReplyingToComment
     ? (target as ITweetData)?.quoted_tweet
     : null;
@@ -86,10 +83,8 @@ const ReplyModal = ({
                 )}
               </HeaderInfo>
 
-              {/* Exibe o comentário/texto escrito pelo utilizador */}
               {target?.content && <Description>{target.content}</Description>}
 
-              {/* Exibe a mídia direta, caso exista no tweet principal */}
               {target?.media && (
                 <TweetMedia
                   media={target.media}
@@ -97,7 +92,6 @@ const ReplyModal = ({
                 />
               )}
 
-              {/* Exibe o card do Tweet Citado (com imagem e conteúdo original) */}
               {quotedTweetData && (
                 <div style={{ marginTop: 8 }}>
                   <QuotedTweet

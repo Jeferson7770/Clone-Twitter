@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+import cloudinary  
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,7 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "cloudinary_storage",  
     "django.contrib.staticfiles",
-    "cloudinary", 
+    "cloudinary",  
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
@@ -98,10 +99,19 @@ STORAGES = {
 }
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
-    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME", "fzr0zq0o"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY", "991937179949157"),
+    "API_SECRET": os.environ.get(
+        "CLOUDINARY_API_SECRET", "u4uG3PDQ_-0imz-9LEr_a0mxCEo"
+    ),
 }
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE["CLOUD_NAME"],
+    api_key=CLOUDINARY_STORAGE["API_KEY"],
+    api_secret=CLOUDINARY_STORAGE["API_SECRET"],
+    secure=True,
+)
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"

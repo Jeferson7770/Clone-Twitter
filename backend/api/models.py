@@ -210,23 +210,15 @@ def create_like_notification(sender, instance, created, **kwargs):
 def create_comment_like_notification(
     sender, instance, action, reverse, pk_set, **kwargs
 ):
-    """
-    Curtida em comentário usa ManyToMany (Comment.likes), então o post_save
-    não dispara. Aqui tratamos o m2m_changed:
-    - post_add: notifica o autor do comentário (exceto se curtir o próprio)
-    - post_remove: apaga a notificação, evitando duplicadas ao curtir de novo
-    """
     if action not in ("post_add", "post_remove") or not pk_set:
         return
 
     if reverse:
-        # user.liked_comments.add(comment): instance é o User
         comments = Comment.objects.filter(pk__in=pk_set).select_related(
             "author", "tweet"
         )
         pairs = [(comment, instance) for comment in comments]
     else:
-        # comment.likes.add(user): instance é o Comment
         users = User.objects.filter(pk__in=pk_set)
         pairs = [(instance, user) for user in users]
 
@@ -255,9 +247,6 @@ def create_comment_like_notification(
 def create_comment_notification(sender, instance, created, **kwargs):
     if not created:
         return
-
-    # Resposta a outro comentário: avisa o autor do comentário pai.
-    # Comentário direto: avisa o autor do tweet.
     if instance.parent:
         recipient = instance.parent.author
     else:

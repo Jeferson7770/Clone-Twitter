@@ -50,7 +50,6 @@ const MenuBar: React.FC<MenuBarProps> = (_props) => {
   const prevNotificationsRef = useRef<number>(0);
   const prevMessagesRef = useRef<number>(0);
 
-  // Espelha o estado do modal para o polling (o setInterval não vê o state atualizado)
   const isNotificationsOpenRef = useRef<boolean>(false);
 
   const isHome = location.pathname === '/';
@@ -119,7 +118,6 @@ const MenuBar: React.FC<MenuBarProps> = (_props) => {
           ) || 0;
 
         if (isNotificationsOpenRef.current) {
-          // Com o modal aberto, o utilizador já está a ver as notificações
           prevNotificationsRef.current = count;
           setUnreadCount(0);
         } else {

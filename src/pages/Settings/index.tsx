@@ -19,6 +19,12 @@ import {
   CancelButton,
   AppearanceContainer,
   ThemeButton,
+  SecuritySection,
+  InputGroup,
+  MessageError,
+  MessageSuccess,
+  SaveButton,
+  PasswordForm,
 } from './styles';
 
 interface SettingsProps {
@@ -32,6 +38,60 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Estados para a alteração de senha
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Preencha todos os campos de senha.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setIsPasswordLoading(true);
+    try {
+      await api.post('/change-password/', {
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
+      setPasswordSuccess('Senha alterada com sucesso!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (pwdErr: unknown) {
+      const errData = (
+        pwdErr as {
+          response?: { data?: { old_password?: string[]; detail?: string } };
+        }
+      ).response?.data;
+      const msg =
+        errData?.old_password?.[0] ||
+        errData?.detail ||
+        'Erro ao alterar a senha. Verifique se a atual está correta.';
+      setPasswordError(msg);
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -66,59 +126,61 @@ const Settings: React.FC<SettingsProps> = ({ toggleTheme, currentTheme }) => {
             <Title>Aparência</Title>
             <Description>
               O tema atual é:{' '}
-              <strong
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                {currentTheme === 'light' ? (
-                  <>
-                    Claro
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="5" />
-                      <line x1="12" y1="1" x2="12" y2="3" />
-                      <line x1="12" y1="21" x2="12" y2="23" />
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                      <line x1="1" y1="12" x2="3" y2="12" />
-                      <line x1="21" y1="12" x2="23" y2="12" />
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
-                  </>
-                ) : (
-                  <>
-                    Escuro
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                  </>
-                )}
-              </strong>
+              <strong>{currentTheme === 'light' ? 'Claro' : 'Escuro'}</strong>
             </Description>
             <ThemeButton onClick={toggleTheme}>Mudar tema</ThemeButton>
           </AppearanceContainer>
         )}
+
+        {/* Secção dedicada à Segurança e Alteração de Senha */}
+        <SecuritySection>
+          <Title>Segurança (Alterar Senha)</Title>
+          <Description>
+            Atualize a sua senha regularmente para manter a segurança da sua
+            conta.
+          </Description>
+
+          {passwordError && <MessageError>{passwordError}</MessageError>}
+          {passwordSuccess && (
+            <MessageSuccess>{passwordSuccess}</MessageSuccess>
+          )}
+
+          <PasswordForm onSubmit={handlePasswordChange}>
+            <InputGroup>
+              <label>Senha Atual</label>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+              />
+            </InputGroup>
+
+            <InputGroup>
+              <label>Nova Senha</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo de 6 caracteres"
+              />
+            </InputGroup>
+
+            <InputGroup>
+              <label>Confirmar Nova Senha</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirme a nova senha"
+              />
+            </InputGroup>
+
+            <SaveButton type="submit" disabled={isPasswordLoading}>
+              {isPasswordLoading ? 'Salvando...' : 'Atualizar senha'}
+            </SaveButton>
+          </PasswordForm>
+        </SecuritySection>
 
         <Title>A sua conta</Title>
         <Description>

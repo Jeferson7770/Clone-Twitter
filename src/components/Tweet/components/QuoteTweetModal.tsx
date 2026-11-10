@@ -21,7 +21,6 @@ interface QuoteTweetModalProps {
   onClose: () => void;
 }
 
-/** Modal "Comentar no Retweet" com scroll, prévia e botão de postar visíveis. */
 const QuoteTweetModal = ({
   tweet,
   text = '',

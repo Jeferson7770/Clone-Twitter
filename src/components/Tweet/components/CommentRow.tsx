@@ -25,7 +25,6 @@ interface CommentRowProps {
   onUserClick: (e: MouseEvent, username: string) => void;
 }
 
-/** Um único comentário (sem as respostas aninhadas — quem cuida disso é o CommentTree). */
 const CommentRow = ({
   comment,
   isNested,
@@ -61,7 +60,6 @@ const CommentRow = ({
           <span>@{comment.author.username}</span>
         </CommentAuthorContainer>
 
-        {/* CORREÇÃO AQUI: Utiliza o parent_author_username vindo do backend */}
         {comment.parent && comment.parent_author_username && (
           <ReplyingToTag>
             Em resposta a <span>@{comment.parent_author_username}</span>

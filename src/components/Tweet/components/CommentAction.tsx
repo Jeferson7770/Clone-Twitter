@@ -16,7 +16,6 @@ interface CommentActionProps {
   onViewAll: (e: MouseEvent) => void;
 }
 
-/** Ícone de comentário + contador + dropdown (Responder / Ver todas). */
 const CommentAction = ({
   menuRef,
   count,

@@ -25,6 +25,9 @@ export const Header = styled.div`
     cursor: pointer;
     background: transparent;
     border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     &:hover {
       background: var(--twitter-dark-hover);
@@ -49,11 +52,13 @@ export const Content = styled.div`
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 `;
 
 export const AppearanceContainer = styled.div`
-  margin-bottom: 40px;
+  margin-bottom: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--outline);
 `;
 
 export const ThemeButton = styled.button`
@@ -69,6 +74,82 @@ export const ThemeButton = styled.button`
 
   &:hover {
     background-color: var(--twitter-dark-hover);
+  }
+`;
+
+export const SecuritySection = styled.div`
+  margin-bottom: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--outline);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const PasswordForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+`;
+
+export const InputGroup = styled.div`
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  padding: 8px 12px;
+  background-color: var(--search);
+
+  label {
+    font-size: 13px;
+    color: var(--gray);
+    display: block;
+  }
+
+  input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 16px;
+    outline: none;
+    margin-top: 4px;
+  }
+`;
+
+export const MessageError = styled.div`
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+`;
+
+export const MessageSuccess = styled.div`
+  color: var(--retweet);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+`;
+
+export const SaveButton = styled.button`
+  background-color: var(--twitter);
+  color: var(--white);
+  border: none;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background-color 0.2s;
+  margin-top: 4px;
+
+  &:hover {
+    background-color: var(--twitter-light-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
